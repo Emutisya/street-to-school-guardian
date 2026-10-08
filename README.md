@@ -1,11 +1,54 @@
 # Street to School Guardian
-### AI for Education · A bridge to support, not a label
+### AI for Education · Turn a barrier into a route forward.
 
-An offline-capable, consent-first ML prototype that matches **anonymous, self-reported barriers to learning** with **fictional education support ideas**. A family or trusted adult controls the description, can decline suggestions, and can withdraw at any time.
+**Street to School Guardian is a consent-first support navigation engine.** It
+connects an anonymous description of a learning barrier to ranked support ideas,
+explains the match, and prepares a human handoff preview without building a
+profile of the child.
 
-The ambition is a community-owned bridge between unmet learning needs and verified human support, not a system for monitoring children. The current deliverable is a working local demonstration, not a deployed service or a claim of educational impact.
+[![CI](https://github.com/Emutisya/street-to-school-guardian/actions/workflows/ci.yml/badge.svg)](https://github.com/Emutisya/street-to-school-guardian/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-**No surveillance. No dropout-risk labels. No eligibility determinations. No automated punitive decisions.**
+## The invention thesis
+
+A child's path to learning can be interrupted by problems that a lesson alone
+cannot solve: the cost of transport, access to materials, connectivity, or the
+need for a trusted person to help navigate support.
+
+The design starts with a different question. Not **"Which child is likely to
+fail?"**, but **"What is getting in the way, and what support could help?"**
+Machine learning retrieves possibilities; the family and trusted humans retain
+authority over what happens next.
+
+The global ambition is a community-maintained navigation network: locally
+verified support catalogs, offline access, and local-language discovery, without
+a central database of children's lives. The working system establishes the
+retrieval, consent and human-choice foundations for that direction.
+
+## Experience the working system
+
+| Step | What the Guardian does today |
+| --- | --- |
+| Choose | Requires explicit consent before processing a barrier description |
+| Describe | Accepts an anonymous or synthetic description and support-format preference |
+| Discover | Runs learned TF-IDF retrieval against the demo support catalog |
+| Understand | Shows ranked ideas and the shared terms behind each match |
+| Take control | Offers a simulated human verification checklist, not automatic enrollment |
+| Withdraw | Clears the interface and cancels pending browser requests when consent is withdrawn |
+
+The dashboard is connected to a real Python inference service. A missing match
+is a catalog or retrieval limitation, never a judgment about a child's need.
+
+### Design choices that matter
+
+- **Support, not surveillance.** No dropout labels, monitoring or eligibility scores.
+- **Consent is part of the system.** It gates both retrieval and handoff previews.
+- **Human choice remains central.** Suggestions do not enroll, allocate or deny.
+- **Local-first by construction.** No external inference service or application-level retention of descriptions.
+
+**Current release:** a working local research prototype with fictional supports
+and synthetic evaluation cases. It demonstrates navigation, not real referrals
+or measured educational outcomes. No partner or service availability is claimed.
 
 ## What works today
 
@@ -24,7 +67,6 @@ The ambition is a community-owned bridge between unmet learning needs and verifi
 Requires **Python 3.11 or newer**. No packages need installing. Run commands from this repository's root.
 
 ```powershell
-Set-Location C:\Users\emutisya\global-change-ml\street-to-school-guardian
 python -m guardian train
 python -m guardian evaluate
 python -m unittest discover -s tests -v
@@ -58,7 +100,10 @@ node tests\browser_smoke.mjs
 
 The test starts its own loopback server and isolated browser, exercises real dashboard inference, handoff, consent withdrawal, invalid/no-match states, late-response protection, mobile layout and themes, and closes them afterward. Screenshots go into ignored `browser-validation`; its browser profile is removed. It also checks that the page makes no external requests and uses no browser storage. This is not a full accessibility or security audit.
 
-Observed local validation: **18 Python tests passed** on Windows / Python 3.14.3. The real Edge browser smoke test passed twice consecutively, including request cancellation and responsive light/dark screenshots. Saved-artifact CLI server startup, health and HTTP inference also passed. The GitHub Actions matrix is configured but has not yet run on GitHub; no repository has been created or published by this implementation.
+The published repository includes **18 Python behavioral tests** and an optional
+real Edge browser smoke test covering request cancellation and responsive
+light/dark layouts. GitHub Actions exercises the training, evaluation and
+inference workflow; current results are linked in the CI badge above.
 
 ## Architecture
 
@@ -170,7 +215,7 @@ Use this repository for learning, synthetic demonstrations and community design 
 
 CI verifies program behavior, not social outcomes or production readiness. The MIT license grants software rights; it does not certify fitness for a safeguarding use case.
 
-## Ambitious, credible global roadmap
+## From working core to a community support network
 
 These are proposed stages, **not delivered capabilities, partners or measured impact**:
 
