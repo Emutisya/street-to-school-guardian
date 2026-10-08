@@ -21,6 +21,8 @@ def main():
     recommend.add_argument("--consent", action="store_true")
     recommend.add_argument("--mode", choices=["any", "offline", "online"], default="any")
     args = parser.parse_args()
+    if args.command == "serve" and not 0 <= args.port <= 65535:
+        parser.error("--port must be between 0 and 65535; use 0 to choose an available port.")
     try:
         catalog = load_catalog()
         model = Retriever.load(args.model, catalog) if getattr(args, "model", None) else Retriever(catalog).fit()
@@ -35,8 +37,6 @@ def main():
             text = sys.stdin.read(801)
             print(json.dumps(match(model, {"text": text, "mode": args.mode, "consent": True}), indent=2))
         else:
-            if not 0 <= args.port <= 65535:
-                raise ValueError("Port must be between 0 and 65535.")
             server = create_server(model, args.port)
             print(f"Open http://127.0.0.1:{server.server_port} — fictional services, no payload logging.", flush=True)
             try:
