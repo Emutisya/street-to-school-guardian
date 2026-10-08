@@ -64,6 +64,13 @@ or measured educational outcomes. No partner or service availability is claimed.
 
 ## Quickstart
 
+Clone the standalone project:
+
+```powershell
+git clone https://github.com/Emutisya/street-to-school-guardian.git
+Set-Location street-to-school-guardian
+```
+
 Requires **Python 3.11 or newer**. No packages need installing. Run commands from this repository's root.
 
 ```powershell
@@ -78,6 +85,21 @@ Open **http://127.0.0.1:8765**. Tick consent, choose a sample, explore ideas, th
 On other operating systems, change into your cloned repository first and use `models/tfidf.json` for the model path. The Python implementation itself is portable.
 
 You can also run `python -m guardian serve` without an artifact; it fits the synthetic catalog in memory at startup. `--port 0` chooses an available port and prints its URL. The saved artifact is checked against the current catalog and a deterministic refit before its weights are used. This is a correctness check, not a startup optimization.
+
+### Run alongside the other projects
+
+All four projects default to port 8765. Use a separate terminal and port 8766
+for the Guardian when MCP Shield is already running:
+
+```powershell
+python -m guardian serve --port 8766
+```
+
+Open **http://127.0.0.1:8766**; `/health` is the liveness endpoint. Use 8767 for
+Fursa and 8768 for Maternity Health Copilot. Alternatively, `--port 0` selects an
+available port and prints its URL. Ports outside 0 through 65535 are rejected
+before catalog or model loading. If a port is occupied, choose another rather
+than stopping an unrelated process.
 
 ### CLI inference
 
@@ -100,7 +122,7 @@ node tests\browser_smoke.mjs
 
 The test starts its own loopback server and isolated browser, exercises real dashboard inference, handoff, consent withdrawal, invalid/no-match states, late-response protection, mobile layout and themes, and closes them afterward. Screenshots go into ignored `browser-validation`; its browser profile is removed. It also checks that the page makes no external requests and uses no browser storage. This is not a full accessibility or security audit.
 
-The published repository includes **18 Python behavioral tests** and an optional
+The published repository includes **19 Python behavioral tests** and an optional
 real Edge browser smoke test covering request cancellation and responsive
 light/dark layouts. GitHub Actions exercises the training, evaluation and
 inference workflow; current results are linked in the CI badge above.
