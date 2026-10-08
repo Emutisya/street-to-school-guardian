@@ -1,0 +1,49 @@
+{
+  "description": "Manually authored held-out anonymous queries. Relevance labels are synthetic editorial judgments, not judgments about families. Queries are never used to fit vectors or select the fixed threshold.",
+  "queries": [
+    {"text": "Buying pencils and notebooks is difficult.", "relevant": ["learning-kit"]},
+    {"text": "Textbooks and stationery cost more than we can manage.", "relevant": ["learning-kit"]},
+    {"text": "Bus fares make the journey difficult.", "relevant": ["transport"]},
+    {"text": "We need affordable transport for a long journey.", "relevant": ["transport"]},
+    {"text": "Hunger distracts from lessons and breakfast would help.", "relevant": ["meal"]},
+    {"text": "Lunch and nutrition support would make learning easier.", "relevant": ["meal"]},
+    {"text": "Internet data is expensive and we cannot borrow a tablet.", "relevant": ["connectivity"]},
+    {"text": "A shared computer would help with digital homework.", "relevant": ["connectivity"]},
+    {"text": "We need printed exercises without electricity.", "relevant": ["offline-lessons"]},
+    {"text": "Paper worksheets would let us study without a connection.", "relevant": ["offline-lessons"]},
+    {"text": "Fractions and arithmetic are confusing and patient practice would help.", "relevant": ["tutoring"]},
+    {"text": "We would like help with maths and writing.", "relevant": ["tutoring"]},
+    {"text": "Bilingual explanations would make unfamiliar vocabulary easier.", "relevant": ["language"]},
+    {"text": "Translation would help us understand lessons in a new language.", "relevant": ["language"]},
+    {"text": "Large print and audio would make reading easier.", "relevant": ["accessibility"]},
+    {"text": "Captions would help with hearing access to lessons.", "relevant": ["accessibility"]},
+    {"text": "Noise and crowding make concentration hard.", "relevant": ["quiet-space"]},
+    {"text": "We need a calm space away from distractions.", "relevant": ["quiet-space"]},
+    {"text": "Caregiving means we need flexible timing for lessons.", "relevant": ["flexible-time"]},
+    {"text": "Household responsibilities leave little time for study sessions.", "relevant": ["flexible-time"]},
+    {"text": "Feeling overwhelmed and worry get in the way of studying.", "relevant": ["wellbeing"]},
+    {"text": "Stress makes it difficult to concentrate and a listening conversation would help.", "relevant": ["wellbeing"]},
+    {"text": "Enrollment forms and paperwork are confusing.", "relevant": ["human-guide"]},
+    {"text": "We want a guide to explain support options and referral information.", "relevant": ["human-guide"]},
+    {"text": "Internet data costs and bus fares both make learning difficult.", "relevant": ["connectivity", "transport"]},
+    {"text": "We need notebooks and patient maths practice.", "relevant": ["learning-kit", "tutoring"]}
+  ],
+  "challenge_queries": [
+    {"text": "We cannot afford the ride to class.", "relevant": ["transport"]},
+    {"text": "An empty stomach makes it hard to focus.", "relevant": ["meal"]},
+    {"text": "The web is too costly and we lack a laptop.", "relevant": ["connectivity"]},
+    {"text": "We need someone to explain sums slowly.", "relevant": ["tutoring"]},
+    {"text": "Taking care of relatives interrupts our routine.", "relevant": ["flexible-time"]},
+    {"text": "The house is loud and there is nowhere to focus.", "relevant": ["quiet-space"]},
+    {"text": "Necesitamos libros y cuadernos.", "relevant": ["learning-kit"]},
+    {"text": "Tunahitaji nauli ya kwenda darasani.", "relevant": ["transport"]}
+  ],
+  "unmatched_queries": [
+    "Volcano geology and marine fossils.",
+    "Repairing a refrigerator compressor.",
+    "Orchestral trumpet tuning techniques.",
+    "Quantum entanglement simulation.",
+    "We want assistance.",
+    "Learning."
+  ]
+}

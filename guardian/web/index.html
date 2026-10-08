@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Street to School Guardian | AI for Education</title>
+  <script>
+    (() => {
+      const param = new URLSearchParams(window.location.search).get("clawpilotTheme");
+      const theme =
+        param || (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+      document.documentElement.setAttribute("data-theme", theme);
+    })();
+  </script>
+  <style>
+    :root {
+      color-scheme: light;
+      --cp-bg: #f7f4ef;
+      --cp-bg-elevated: #fcfbf8;
+      --cp-surface: #ffffff;
+      --cp-surface-soft: #f5f5f5;
+      --cp-border: #dedede;
+      --cp-border-strong: #919191;
+      --cp-text: #242424;
+      --cp-text-muted: #5c5c5c;
+      --cp-text-soft: #6f6f6f;
+      --cp-accent: #b11f4b;
+      --cp-accent-hover: #9a1a41;
+      --cp-accent-soft: rgba(177, 31, 75, 0.08);
+      --cp-accent-fg: #ffffff;
+      --cp-success: #16a34a;
+      --cp-danger: #dc2626;
+      --cp-warning: #f59e0b;
+      --cp-link: #0078d4;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.12);
+      --cp-overlay: rgba(255, 255, 255, 0.8);
+      --cp-panel: rgba(255, 255, 255, 0.86);
+      --cp-panel-strong: rgba(255, 255, 255, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.55);
+      --cp-highlight: rgba(177, 31, 75, 0.12);
+    }
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --cp-bg: #3d3b3a;
+      --cp-bg-elevated: #343231;
+      --cp-surface: #292929;
+      --cp-surface-soft: #2e2e2e;
+      --cp-border: #474747;
+      --cp-border-strong: #5f5f5f;
+      --cp-text: #dedede;
+      --cp-text-muted: #919191;
+      --cp-text-soft: #b0b0b0;
+      --cp-accent: #fd8ea1;
+      --cp-accent-hover: #fb7b91;
+      --cp-accent-soft: rgba(253, 142, 161, 0.14);
+      --cp-accent-fg: #1a1a1a;
+      --cp-success: #4ade80;
+      --cp-danger: #f87171;
+      --cp-warning: #fbbf24;
+      --cp-link: #4da6ff;
+      --cp-shadow: 0 18px 48px rgba(0, 0, 0, 0.32);
+      --cp-overlay: rgba(41, 41, 41, 0.88);
+      --cp-panel: rgba(41, 41, 41, 0.72);
+      --cp-panel-strong: rgba(41, 41, 41, 0.96);
+      --cp-sheen: rgba(255, 255, 255, 0.04);
+      --cp-highlight: rgba(253, 142, 161, 0.12);
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--cp-bg); color: var(--cp-text); font-family: "Segoe UI", Aptos, Calibri, -apple-system, BlinkMacSystemFont, sans-serif; line-height: 1.55; }
+    button, textarea, select { font: inherit; }
+    button, select, textarea { border-radius: 0.625rem; }
+    button { cursor: pointer; padding: 10px 16px; border: 1px solid var(--cp-border); color: var(--cp-text); background: var(--cp-surface); font-weight: 600; }
+    button:hover:not(:disabled) { border-color: var(--cp-accent); background: var(--cp-accent-soft); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    :focus-visible { outline: 3px solid var(--cp-accent); outline-offset: 3px; }
+    a { color: var(--cp-link); }
+    .skip { position: absolute; top: -100px; left: 16px; background: var(--cp-surface); padding: 12px; z-index: 10; }
+    .skip:focus { top: 12px; }
+    .wrap { width: min(1240px, calc(100% - 48px)); margin: auto; }
+    header { background: var(--cp-bg-elevated); border-bottom: 1px solid var(--cp-border); }
+    .nav { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 0; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 700; }
+    .mark { width: 40px; height: 40px; display: grid; place-items: center; color: var(--cp-accent); background: var(--cp-accent-soft); border: 1px solid var(--cp-accent); border-radius: 10px; font-size: 22px; }
+    .brand small { display: block; color: var(--cp-text-muted); font-weight: 400; font-size: 12px; letter-spacing: .06em; }
+    .nav-right { display: flex; gap: 12px; align-items: center; }
+    .pill { font-size: 12px; padding: 4px 10px; border-radius: 10px; border: 1px solid var(--cp-border); color: var(--cp-text-muted); background: var(--cp-surface-soft); display: inline-block; }
+    .eyebrow { color: var(--cp-accent); font-size: 12px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    .hero { padding: 44px 0 32px; display: grid; grid-template-columns: 1.5fr 1fr; gap: 48px; align-items: center; }
+    h1 { font-size: clamp(30px, 4vw, 46px); line-height: 1.12; letter-spacing: -.025em; margin: 12px 0 16px; max-width: 650px; }
+    h2 { margin: 0 0 8px; font-size: 22px; line-height: 1.3; }
+    h3 { margin: 12px 0 8px; font-size: 19px; line-height: 1.35; }
+    p { margin: 0 0 12px; }
+    .intro { max-width: 620px; color: var(--cp-text-muted); font-size: 17px; }
+    .path { border-left: 2px solid var(--cp-border); padding-left: 24px; }
+    .path-item { position: relative; margin: 0 0 20px; }
+    .path-item:last-child { margin-bottom: 0; }
+    .path-item::before { content: ""; position: absolute; left: -30px; top: 8px; width: 10px; height: 10px; background: var(--cp-accent); border: 2px solid var(--cp-bg); border-radius: 50%; }
+    .path-item span { display: block; color: var(--cp-text-muted); font-size: 13px; }
+    .notice { padding: 16px 20px; background: var(--cp-accent-soft); border: 1px solid var(--cp-border); border-left: 4px solid var(--cp-accent); border-radius: 10px; font-size: 14px; margin-bottom: 28px; }
+    .workspace { display: grid; grid-template-columns: 380px minmax(0, 1fr); gap: 24px; align-items: start; }
+    .panel { background: var(--cp-surface); border: 1px solid var(--cp-border); border-radius: 16px; padding: 24px; }
+    .subtle { color: var(--cp-text-muted); font-size: 14px; }
+    .step { font-size: 12px; font-weight: 700; color: var(--cp-accent); margin-bottom: 12px; letter-spacing: .08em; }
+    .consent { display: flex; gap: 12px; padding: 16px; background: var(--cp-surface-soft); border: 1px solid var(--cp-border); border-radius: 10px; margin: 20px 0; align-items: flex-start; }
+    input[type="checkbox"] { accent-color: var(--cp-accent); width: 20px; height: 20px; flex-shrink: 0; margin: 3px 0 0; }
+    .consent label { font-size: 14px; cursor: pointer; }
+    .samples { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 20px; }
+    .samples button { padding: 6px 10px; font-size: 13px; font-weight: 400; }
+    .field-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+    textarea, select { width: 100%; background: var(--cp-bg-elevated); color: var(--cp-text); border: 1px solid var(--cp-border-strong); padding: 12px; }
+    textarea { resize: vertical; min-height: 136px; }
+    .field-help { color: var(--cp-text-muted); font-size: 12px; margin: 8px 0 16px; }
+    .actions { display: flex; gap: 8px; margin-top: 20px; }
+    .primary { background: var(--cp-accent); color: var(--cp-accent-fg); border-color: var(--cp-accent); flex: 1; }
+    .primary:hover:not(:disabled) { background: var(--cp-accent-hover); color: var(--cp-accent-fg); }
+    .results-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 16px; }
+    #status { min-height: 24px; margin-bottom: 16px; font-size: 14px; }
+    #status[data-error="true"] { color: var(--cp-danger); }
+    .empty { padding: 44px 28px; border: 1px dashed var(--cp-border-strong); border-radius: 16px; text-align: center; background: var(--cp-bg-elevated); }
+    .empty-symbol { font-size: 32px; color: var(--cp-accent); margin-bottom: 12px; }
+    .empty p { color: var(--cp-text-muted); max-width: 390px; margin: 8px auto; }
+    .resource { background: var(--cp-surface); padding: 20px 24px; border: 1px solid var(--cp-border); border-radius: 16px; margin-bottom: 16px; }
+    .resource-head { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    .resource .rank { color: var(--cp-accent); font-size: 12px; font-weight: 700; }
+    .resource .description { color: var(--cp-text-muted); font-size: 14px; }
+    .metadata { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+    .explain { border-top: 1px solid var(--cp-border); padding-top: 12px; margin-top: 16px; font-size: 13px; }
+    .score { font-family: Consolas, "Courier New", Courier, monospace; font-size: 12px; color: var(--cp-text-muted); }
+    .score-bar { height: 4px; background: var(--cp-surface-soft); border-radius: 10px; margin: 8px 0; overflow: hidden; }
+    .score-fill { height: 100%; background: var(--cp-accent); }
+    .terms { color: var(--cp-accent); font-weight: 600; }
+    .availability { color: var(--cp-text-soft); font-size: 12px; margin: 12px 0; }
+    .principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding: 36px 0; margin-top: 20px; border-top: 1px solid var(--cp-border); }
+    .principles h3 { font-size: 16px; margin-top: 0; }
+    .principles p { font-size: 14px; color: var(--cp-text-muted); }
+    footer { border-top: 1px solid var(--cp-border); padding: 20px 0 28px; color: var(--cp-text-muted); font-size: 12px; }
+    dialog { max-width: 560px; width: calc(100% - 32px); padding: 28px; border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-surface); color: var(--cp-text); }
+    dialog::backdrop { background: var(--cp-overlay); }
+    dialog li { margin-bottom: 12px; }
+    dialog ol { padding-left: 24px; }
+    .code { font-family: Consolas, "Courier New", Courier, monospace; }
+    @media (max-width: 950px) { .workspace { grid-template-columns: 320px minmax(0, 1fr); } .hero { gap: 24px; } .panel { padding: 20px; } }
+    @media (max-width: 760px) { .workspace, .hero, .principles { grid-template-columns: 1fr; } .hero { padding-top: 28px; } .path { display: none; } .wrap { width: calc(100% - 32px); } .nav-right .pill { display: none; } .brand { font-size: 14px; } .resource-head { align-items: flex-start; } }
+    @media (prefers-reduced-motion: no-preference) { button { transition: background .15s, border-color .15s; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#workspace">Skip to support finder</a>
+  <header>
+    <div class="wrap nav">
+      <div class="brand"><span class="mark" aria-hidden="true">↗</span><div>Street to School Guardian<small>AI FOR EDUCATION · LOCAL DEMO</small></div></div>
+      <div class="nav-right"><span class="pill">No accounts · No tracking</span><button id="theme" type="button" aria-label="Switch color theme">Switch theme</button></div>
+    </div>
+  </header>
+  <main class="wrap">
+    <section class="hero" aria-labelledby="headline">
+      <div>
+        <div class="eyebrow">A bridge to support, not a label</div>
+        <h1>Start with a barrier.<br>Explore a way forward.</h1>
+        <p class="intro">Learning can be interrupted by everyday obstacles. Describe a general need, explore relevant support ideas, and keep every next step in human hands.</p>
+      </div>
+      <div class="path" aria-label="The support journey">
+        <div class="path-item"><strong>01 · You choose what to share</strong><span>Consent first. Anonymous descriptions only.</span></div>
+        <div class="path-item"><strong>02 · A local model finds ideas</strong><span>Fitted TF-IDF retrieval, with visible explanations.</span></div>
+        <div class="path-item"><strong>03 · A human verifies the next step</strong><span>A conversation checklist, never an automated decision.</span></div>
+      </div>
+    </section>
+    <aside class="notice"><strong>Demonstration, not a service directory.</strong> All 12 supports are fictional. Nothing is sent or booked. This is not emergency support, an eligibility check, or an assessment of a child.</aside>
+    <section class="workspace" id="workspace" aria-label="Consent-first support finder">
+      <form class="panel" id="finder">
+        <div class="step">01 / YOUR CHOICE</div>
+        <h2>What gets in the way?</h2>
+        <p class="subtle">Use a synthetic example or general words. Never enter names, contact details, dates, locations or private family history.</p>
+        <div class="consent">
+          <input type="checkbox" id="consent">
+          <label for="consent">I agree to process an anonymous description locally for this demo. I understand the services are fictional and no referral will be sent.</label>
+        </div>
+        <span class="field-label">Try an anonymous example</span>
+        <div class="samples">
+          <button type="button" data-preset="Bus fares and buying notebooks make learning difficult." disabled>Travel + materials</button>
+          <button type="button" data-preset="We need printed worksheets without internet or electricity." disabled>Offline learning</button>
+          <button type="button" data-preset="Large print and audio would make reading easier." disabled>Accessible formats</button>
+          <button type="button" data-preset="Caregiving leaves little time for study. We need flexible timing." disabled>Flexible time</button>
+        </div>
+        <label class="field-label" for="barrier">General barrier to learning</label>
+        <textarea id="barrier" maxlength="800" placeholder="For example: Internet data is expensive and paper lessons would help." aria-describedby="input-help" disabled required autocomplete="off" spellcheck="false"></textarea>
+        <div class="field-help" id="input-help">800 characters maximum. Words only; no identifying information. Obvious numbers, links and contact details are rejected, but this is not an anonymizer.</div>
+        <label class="field-label" for="mode">Preferred support format</label>
+        <select id="mode" disabled><option value="any">Any demo format</option><option value="offline">Offline / in-person ideas</option><option value="online">Online ideas</option></select>
+        <div class="field-help">This filters fictional formats, not availability or entitlement. Catalog descriptions are English-only.</div>
+        <div class="actions"><button class="primary" id="find" type="submit" disabled>Explore support ideas</button><button id="clear" type="button">Reset</button></div>
+        <p class="field-help">Reset or untick consent to clear this page and cancel pending requests. No browser storage or server payload logs are used.</p>
+      </form>
+      <section aria-labelledby="results-title" aria-busy="false" id="result-region">
+        <div class="results-top"><div><div class="step">02 / SUPPORT IDEAS</div><h2 id="results-title">A starting point for a conversation</h2></div><span class="pill" id="result-count">Awaiting consent</span></div>
+        <p class="subtle">Ranked by description similarity, not urgency, personal need or likelihood of success. Every option needs human verification.</p>
+        <div role="status" aria-live="polite" id="status"></div>
+        <div id="results">
+          <div class="empty"><div class="empty-symbol" aria-hidden="true">↗</div><h3>No one needs a risk score.</h3><p>Choose consent and try an anonymous example to explore relevant fictional supports. You stay in control.</p></div>
+        </div>
+      </section>
+    </section>
+    <section class="principles" aria-label="Safeguarding principles">
+      <div><h3>Match needs, never monitor children</h3><p>No attendance feeds, individual profiles, surveillance, GPS, dropout labels, eligibility predictions or punitive actions.</p></div>
+      <div><h3>Explain the match</h3><p>The local model learns a vocabulary and weights from synthetic support descriptions. Shared terms explain its suggestions. Similarity scores are not probabilities.</p></div>
+      <div><h3>Build with communities</h3><p>The future goal is a locally maintained, multilingual support network with verified services and human review. This prototype does not claim real-world outcomes.</p></div>
+    </section>
+  </main>
+  <footer><div class="wrap">Street to School Guardian · Synthetic data only · No external APIs, analytics, keys or downloaded models · If facing immediate danger, seek appropriate trusted local help outside this demo.</div></footer>
+  <dialog id="handoff" aria-labelledby="handoff-title"><div class="step">03 / HUMAN HANDOFF SIMULATION</div><h2 id="handoff-title">A conversation, not a referral</h2><p id="handoff-resource" class="terms"></p><p id="handoff-message" class="subtle"></p><ol id="checklist"></ol><button id="close-dialog" type="button">Return to ideas</button></dialog>
+  <script>
+    (() => {
+      // Preserve the mandated initial script while correctly supporting explicit light.
+      const explicit = new URLSearchParams(location.search).get("clawpilotTheme");
+      if (explicit === "light" || explicit === "dark") document.documentElement.dataset.theme = explicit;
+      const $ = id => document.getElementById(id);
+      const consent = $("consent"), barrier = $("barrier"), mode = $("mode");
+      const results = $("results"), status = $("status");
+      let epoch = 0, pending = null, busy = false;
+      function node(tag, text, className) {
+        const item = document.createElement(tag);
+        if (text !== undefined) item.textContent = text;
+        if (className) item.className = className;
+        return item;
+      }
+      function message(text, error = false) {
+        status.textContent = text; status.dataset.error = String(error);
+      }
+      function sync() {
+        [barrier, mode, ...document.querySelectorAll("[data-preset]")].forEach(el => el.disabled = !consent.checked);
+        $("find").disabled = !consent.checked || busy;
+        $("find").textContent = busy ? "Finding ideas…" : "Explore support ideas";
+        $("result-region").setAttribute("aria-busy", String(busy));
+      }
+      function empty(title, text) {
+        const box = node("div", undefined, "empty");
+        box.append(node("div", "↗", "empty-symbol"), node("h3", title), node("p", text));
+        results.replaceChildren(box);
+      }
+      function invalidate(clearInput = false) {
+        epoch++; if (pending) pending.abort(); pending = null; busy = false;
+        if (clearInput) { barrier.value = ""; mode.value = "any"; }
+        $("handoff").close(); $("checklist").replaceChildren();
+        $("handoff-resource").textContent = ""; $("handoff-message").textContent = "";
+        $("result-count").textContent = consent.checked ? "Ready when you are" : "Awaiting consent";
+        empty("Your choice comes first.", "Describe a general barrier or try a synthetic example. No recommendations are stored.");
+        message(""); sync();
+      }
+      async function request(route, payload) {
+        if (!consent.checked) return;
+        if (location.protocol === "file:") throw new Error("Start python -m guardian serve, then open http://127.0.0.1:8765. This HTML needs the local Python inference server.");
+        pending = new AbortController();
+        const response = await fetch(route, {
+          method: "POST", headers: {"Content-Type": "application/json"},
+          body: JSON.stringify(payload), signal: pending.signal,
+          cache: "no-store", credentials: "omit"
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "The local request could not be processed.");
+        return data;
+      }
+      async function handoff(id) {
+        if (!consent.checked || busy) return;
+        const generation = epoch; busy = true; sync();
+        try {
+          const data = await request("/api/handoff", {consent: true, resource_id: id});
+          if (generation !== epoch || !consent.checked) return;
+          $("handoff-resource").textContent = data.title;
+          $("handoff-message").textContent = data.message;
+          $("checklist").replaceChildren(...data.checklist.map(text => node("li", text)));
+          $("handoff").showModal();
+        } catch (error) {
+          if (generation === epoch && error.name !== "AbortError") message(error.message || "Local server unavailable.", true);
+        } finally {
+          if (generation === epoch) { busy = false; pending = null; sync(); }
+        }
+      }
+      function render(items) {
+        results.replaceChildren();
+        items.forEach((item, index) => {
+          const card = node("article", undefined, "resource");
+          const head = node("div", undefined, "resource-head");
+          head.append(node("span", String(index + 1).padStart(2, "0") + " / " + item.category, "rank"), node("span", "Fictional support", "pill"));
+          const metadata = node("div", undefined, "metadata");
+          [item.cost, item.modes.join(" + "), item.language].forEach(value => metadata.append(node("span", value, "pill")));
+          const explanation = node("div", undefined, "explain");
+          explanation.append(node("strong", "Why this appeared"), node("p", item.explanation));
+          const scoreBar = node("div", undefined, "score-bar");
+          const fill = node("div", undefined, "score-fill");
+          fill.style.width = `${Math.max(0, Math.min(1, item.score)) * 100}%`;
+          scoreBar.append(fill);
+          explanation.append(node("div", `Cosine similarity ${item.score.toFixed(3)} · not a probability`, "score"), scoreBar);
+          const button = node("button", "Preview human handoff");
+          button.type = "button"; button.addEventListener("click", () => handoff(item.id));
+          card.append(head, node("h3", item.title), node("p", item.description, "description"), metadata, explanation, node("p", item.availability, "availability"), button);
+          results.append(card);
+        });
+      }
+      $("finder").addEventListener("submit", async event => {
+        event.preventDefault();
+        if (!consent.checked || busy) return;
+        invalidate(); const generation = epoch; busy = true; sync();
+        message("Matching against the fictional catalog on your computer…");
+        try {
+          const data = await request("/api/match", {consent: true, text: barrier.value, mode: mode.value});
+          if (generation !== epoch || !consent.checked) return;
+          $("result-count").textContent = `${data.results.length} demo ideas`;
+          if (data.results.length) render(data.results);
+          else empty("No close match is not a denial.", data.message);
+          message(data.message);
+        } catch (error) {
+          if (generation === epoch && error.name !== "AbortError") message(error.message || "Local server unavailable. Start python -m guardian serve.", true);
+        } finally {
+          if (generation === epoch) { busy = false; pending = null; sync(); }
+        }
+      });
+      consent.addEventListener("change", () => invalidate(!consent.checked));
+      barrier.addEventListener("input", () => invalidate());
+      mode.addEventListener("change", () => invalidate());
+      document.querySelectorAll("[data-preset]").forEach(button => button.addEventListener("click", () => {
+        if (!consent.checked) return;
+        invalidate(); barrier.value = button.dataset.preset; barrier.focus();
+      }));
+      $("clear").addEventListener("click", () => { consent.checked = false; invalidate(true); });
+      $("close-dialog").addEventListener("click", () => $("handoff").close());
+      $("theme").addEventListener("click", () => {
+        document.documentElement.dataset.theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+      });
+      window.addEventListener("pagehide", () => { consent.checked = false; invalidate(true); });
+      if (location.protocol === "file:") message("Read-only preview. For real local ML inference, run python -m guardian serve and open http://127.0.0.1:8765.", true);
+      sync();
+    })();
+  </script>
+</body>
+</html>

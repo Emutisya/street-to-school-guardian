@@ -1,0 +1,134 @@
+[
+  {
+    "id": "learning-kit",
+    "title": "Learning materials circle",
+    "category": "Materials",
+    "description": "Borrow textbooks, notebooks, pencils and school supplies. A shared learning kit offers stationery and reading materials when buying books is difficult.",
+    "modes": ["offline"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator whether a suitable learning materials lending service exists locally."
+  },
+  {
+    "id": "transport",
+    "title": "School journey support desk",
+    "category": "Travel",
+    "description": "Discuss transport costs, bus fares and a long journey to school. Explore safe travel options and affordable transport with a human coordinator, without tracking routes or locations.",
+    "modes": ["offline", "online"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator to verify locally available travel support. Do not share a child's route or location."
+  },
+  {
+    "id": "meal",
+    "title": "Food and learning support circle",
+    "category": "Food",
+    "description": "Explore meal support when hunger makes studying difficult. Discuss breakfast, lunch, food and nutrition needs with a human, without assessing eligibility.",
+    "modes": ["offline"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator to verify a suitable local food support option and its actual terms."
+  },
+  {
+    "id": "connectivity",
+    "title": "Connected learning help desk",
+    "category": "Connectivity",
+    "description": "Access digital lessons when internet data is expensive or a device is unavailable. Discuss a shared computer, tablet lending and connectivity for online homework.",
+    "modes": ["offline", "online"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator to verify device or connectivity support without sharing account credentials."
+  },
+  {
+    "id": "offline-lessons",
+    "title": "Paper-first learning packs",
+    "category": "Offline learning",
+    "description": "Printed worksheets and paper lessons support learning without internet. Offline study packs provide exercises and activities without a computer, electricity or data connection.",
+    "modes": ["offline"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator whether locally appropriate printed learning packs are available."
+  },
+  {
+    "id": "tutoring",
+    "title": "Patient practice sessions",
+    "category": "Learning support",
+    "description": "Get patient tutoring and homework help with maths, reading and writing. Practise fractions, arithmetic and literacy skills through small learning sessions.",
+    "modes": ["offline", "online"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator to verify qualified, safeguarded tutoring options and suitability."
+  },
+  {
+    "id": "language",
+    "title": "Language bridge sessions",
+    "category": "Language",
+    "description": "Language practice helps families understand unfamiliar lesson vocabulary. Explore translation, bilingual explanations and learning in a new language with a human facilitator.",
+    "modes": ["offline", "online"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator to verify support in your preferred language. This demo is English-only."
+  },
+  {
+    "id": "accessibility",
+    "title": "Accessible learning conversation",
+    "category": "Accessibility",
+    "description": "Discuss accessible materials such as large print, audio lessons and captions. Explore reading access, hearing access and assistive learning formats without requiring a diagnosis.",
+    "modes": ["offline", "online"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator to discuss preferred accessible formats without requesting medical records."
+  },
+  {
+    "id": "quiet-space",
+    "title": "Quiet study space",
+    "category": "Study environment",
+    "description": "Find a calm quiet space for reading and homework when noise, crowding or distractions make concentration difficult. Explore a suitable study environment with a coordinator.",
+    "modes": ["offline"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator to verify a safe, accessible study space. No location is collected here."
+  },
+  {
+    "id": "flexible-time",
+    "title": "Flexible learning planner",
+    "category": "Time",
+    "description": "Explore flexible schedules when caregiving, household responsibilities or time constraints interrupt lessons. Discuss short study sessions, flexible timing and balancing care with learning.",
+    "modes": ["offline", "online"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator about flexible study options. Never treat family responsibilities as a risk label."
+  },
+  {
+    "id": "wellbeing",
+    "title": "Supportive listening conversation",
+    "category": "Wellbeing",
+    "description": "Talk to a supportive human about worry, stress or feeling overwhelmed while studying. Explore emotional wellbeing and a calm listening conversation. This is not crisis care or medical advice.",
+    "modes": ["offline", "online"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a human coordinator to verify appropriate wellbeing support. This demo cannot respond to emergencies."
+  },
+  {
+    "id": "human-guide",
+    "title": "Human support navigation",
+    "category": "Navigation",
+    "description": "A human guide can discuss available support options, paperwork and confusing forms. Explore enrollment information and a referral conversation without automated eligibility or decisions.",
+    "modes": ["offline", "online"],
+    "language": "English",
+    "cost": "Free in this demo",
+    "availability": "Fictional demo only; no service is operating.",
+    "handoff": "Ask a trusted human to verify current services, consent requirements and any forms. No referral is sent by this demo."
+  }
+]

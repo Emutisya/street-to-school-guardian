@@ -1,0 +1,22 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+credentials*
+secrets*
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+models/
+outputs/
+*.log
+node_modules/
+browser-validation/
+.DS_Store
+Thumbs.db
