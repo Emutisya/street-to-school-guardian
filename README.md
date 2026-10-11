@@ -201,6 +201,10 @@ The finder supports reviewing one, three or six ideas at a time. API `limit` and
 CLI `recommend --limit` accept strict integers from one through six; the default
 remains three. List size does not change the fixed threshold, ranking order,
 count-only diagnostics or any eligibility decision. Reset restores three.
+Catalog pages now support explicit previous-page navigation without re-entering
+filters. `previous_offset` is bounded at zero, the first page has no predecessor,
+and filter changes/withdrawal clear page-navigation state. Going back restores
+the same stable catalog slice; temporary choices remain until explicitly cleared.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

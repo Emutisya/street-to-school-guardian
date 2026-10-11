@@ -166,6 +166,9 @@ try {
   assert.equal(await run("document.getElementById('print-consent').checked"), false);
   await run("document.getElementById('next-page').click()");
   await until(() => run("document.getElementById('result-count').textContent === '7–12 of 12 catalog ideas'"), "catalog pagination");
+  await run("document.getElementById('previous-page').click()");
+  await until(() => run("document.getElementById('result-count').textContent === '1–6 of 12 catalog ideas'"), "catalog backward navigation");
+  assert.equal(await run("document.getElementById('previous-page').disabled"), true);
   await run("document.getElementById('category').value = 'Food'; document.getElementById('category').dispatchEvent(new Event('change')); document.getElementById('browse').click()");
   await until(() => run("document.querySelectorAll('.resource').length === 1"), "catalog category filter");
   assert.ok((await run("document.getElementById('results').textContent")).includes("Food and learning"));

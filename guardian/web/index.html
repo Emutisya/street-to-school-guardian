@@ -213,7 +213,8 @@
         <h3>Browse without a description</h3>
         <label class="field-label" for="category">Fictional catalog category</label>
         <select id="category" disabled><option value="">All categories</option></select>
-        <div class="actions"><button id="browse" type="button" disabled>Browse fictional catalog</button><button id="next-page" type="button" disabled>Next catalog page</button></div>
+        <div class="actions"><button id="browse" type="button" disabled>Browse fictional catalog</button></div>
+        <div class="actions"><button id="previous-page" type="button" disabled>Previous catalog page</button><button id="next-page" type="button" disabled>Next catalog page</button></div>
         <p class="field-help">Uses only category and format choices, never the description above. Catalog order is by ID, not suitability.</p>
         <p class="field-help" id="catalog-coverage"></p>
         <p class="field-help">Reset or untick consent to clear this page and cancel pending requests. No browser storage or server payload logs are used.</p>
@@ -260,7 +261,7 @@
       const $ = id => document.getElementById(id);
       const consent = $("consent"), barrier = $("barrier"), mode = $("mode");
       const results = $("results"), status = $("status");
-      let epoch = 0, pending = null, busy = false, nextOffset = null;
+      let epoch = 0, pending = null, busy = false, nextOffset = null, previousOffset = null;
       const choices = new Map();
       const dialogTriggers = new Map();
       function node(tag, text, className) {
@@ -301,6 +302,7 @@
         $("category").disabled = !consent.checked || busy;
         $("browse").disabled = !consent.checked || busy;
         $("next-page").disabled = !consent.checked || busy || nextOffset === null;
+        $("previous-page").disabled = !consent.checked || busy || previousOffset === null;
         $("compare").disabled = !consent.checked || busy || choices.size < 2;
         $("prepare-plan").disabled = !consent.checked || busy || choices.size < 1;
         $("print-plan").disabled = !consent.checked || !$("print-consent").checked || !$("planning").open;
@@ -341,7 +343,7 @@
       }
       function invalidate(clearInput = false) {
         epoch++; if (pending) pending.abort(); pending = null; busy = false;
-        nextOffset = null;
+        nextOffset = null; previousOffset = null;
         $("catalog-coverage").textContent = "";
         fieldError();
         if (clearInput) { barrier.value = ""; mode.value = "any"; $("result-limit").value = "3"; $("category").value = ""; choices.clear(); showChoices(); }
@@ -542,6 +544,7 @@
           $("category").value = selected;
           $("catalog-coverage").textContent = `Current category: ${data.mode_counts.any} fictional ideas in any format, ${data.mode_counts.offline} offline, ${data.mode_counts.online} online. Formats may overlap; counts are not actual service availability.`;
           nextOffset = data.next_offset;
+          previousOffset = data.previous_offset;
           $("result-count").textContent = `${data.offset + (data.results.length ? 1 : 0)}–${data.offset + data.results.length} of ${data.total} catalog ideas`;
           if (data.results.length) render(data.results, false);
           else empty("No catalog options in this format.", "Try all categories or any format. This is not a denial of support.");
@@ -584,6 +587,7 @@
       $("category").addEventListener("change", () => invalidate());
       $("browse").addEventListener("click", () => browseCatalog());
       $("next-page").addEventListener("click", () => browseCatalog(nextOffset));
+      $("previous-page").addEventListener("click", () => browseCatalog(previousOffset));
       document.querySelectorAll("[data-preset]").forEach(button => button.addEventListener("click", () => {
         if (!consent.checked) return;
         invalidate(); barrier.value = button.dataset.preset; barrier.focus();

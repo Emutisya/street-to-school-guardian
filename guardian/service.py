@@ -43,6 +43,7 @@ def browse(model, payload):
         "status": "catalog_only", "results": deepcopy(rows[offset:end]),
         "total": len(rows), "offset": offset,
         "next_offset": end if end < len(rows) else None,
+        "previous_offset": max(0, offset - limit) if offset else None,
         "categories": categories,
         "category_counts": {name: sum(row["category"] == name and
                                      (mode == "any" or mode in row["modes"]) for row in model.catalog)

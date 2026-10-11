@@ -468,6 +468,15 @@ class ConsentTests(unittest.TestCase):
         self.assertEqual(sum(all_rows["category_counts"].values()), 12)
         self.assertGreater(all_rows["mode_counts"]["offline"] + all_rows["mode_counts"]["online"], 12)
 
+    def test_catalog_previous_page_restores_same_stable_slice(self):
+        first = browse(self.model, {"consent": True, "limit": 5})
+        second = browse(self.model, {"consent": True, "offset": first["next_offset"], "limit": 5})
+        restored = browse(self.model, {"consent": True, "offset": second["previous_offset"], "limit": 5})
+        self.assertEqual(restored["results"], first["results"])
+        self.assertIsNone(first["previous_offset"])
+        partial = browse(self.model, {"consent": True, "offset": 2, "limit": 5})
+        self.assertEqual(partial["previous_offset"], 0)
+
     def test_comparison_is_bounded_unranked_and_uses_only_metadata(self):
         result = compare(self.model, {"consent": True, "resource_ids": ["transport", "meal"]})
         self.assertEqual([r["id"] for r in result["resources"]], ["transport", "meal"])
