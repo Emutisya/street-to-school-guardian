@@ -6,7 +6,7 @@ import path from "node:path";
 import {fileURLToPath} from "node:url";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const artifacts = path.join(root, "browser-validation");
+const artifacts = path.join(root, "browser-validation", `run-${process.pid}-${Date.now()}`);
 const profile = path.join(artifacts, "edge-profile");
 const browserPath = process.env.GUARDIAN_BROWSER;
 if (!browserPath) throw new Error("Set GUARDIAN_BROWSER to an installed Edge or Chrome executable.");
@@ -103,6 +103,17 @@ try {
   assert.ok((await run("document.getElementById('status').textContent")).includes("Remove"));
   await run("document.getElementById('clear').click()");
   assert.equal(await run("!document.getElementById('consent').checked && document.getElementById('find').disabled"), true);
+  assert.equal(await run("document.getElementById('browse').disabled"), true);
+  await run("document.getElementById('consent').click(); document.getElementById('browse').click()");
+  await until(() => run("document.querySelectorAll('.resource').length === 6"), "catalog browse without input");
+  assert.equal(await run("document.getElementById('barrier').value"), "");
+  assert.equal(await run("!!document.querySelector('.score')"), false, "Catalog is not ranked");
+  await run("document.getElementById('next-page').click()");
+  await until(() => run("document.getElementById('result-count').textContent === '7–12 of 12 catalog ideas'"), "catalog pagination");
+  await run("document.getElementById('category').value = 'Food'; document.getElementById('category').dispatchEvent(new Event('change')); document.getElementById('browse').click()");
+  await until(() => run("document.querySelectorAll('.resource').length === 1"), "catalog category filter");
+  assert.ok((await run("document.getElementById('results').textContent")).includes("Food and learning"));
+  await run("document.getElementById('clear').click()");
 
   // Artificially delay the response to ensure revocation cannot render late results.
   await run(`window.originalFetch = window.fetch; window.fetch = async (...args) => {

@@ -190,6 +190,11 @@
         <select id="mode" disabled><option value="any">Any demo format</option><option value="offline">Offline / in-person ideas</option><option value="online">Online ideas</option></select>
         <div class="field-help">This filters fictional formats, not availability or entitlement. Catalog descriptions are English-only.</div>
         <div class="actions"><button class="primary" id="find" type="submit" disabled>Explore support ideas</button><button id="clear" type="button">Reset</button></div>
+        <h3>Browse without a description</h3>
+        <label class="field-label" for="category">Fictional catalog category</label>
+        <select id="category" disabled><option value="">All categories</option></select>
+        <div class="actions"><button id="browse" type="button" disabled>Browse fictional catalog</button><button id="next-page" type="button" disabled>Next catalog page</button></div>
+        <p class="field-help">Uses only category and format choices, never the description above. Catalog order is by ID, not suitability.</p>
         <p class="field-help">Reset or untick consent to clear this page and cancel pending requests. No browser storage or server payload logs are used.</p>
       </form>
       <section aria-labelledby="results-title" aria-busy="false" id="result-region">
@@ -217,7 +222,7 @@
       const $ = id => document.getElementById(id);
       const consent = $("consent"), barrier = $("barrier"), mode = $("mode");
       const results = $("results"), status = $("status");
-      let epoch = 0, pending = null, busy = false;
+      let epoch = 0, pending = null, busy = false, nextOffset = null;
       function node(tag, text, className) {
         const item = document.createElement(tag);
         if (text !== undefined) item.textContent = text;
@@ -229,6 +234,9 @@
       }
       function sync() {
         [barrier, mode, ...document.querySelectorAll("[data-preset]")].forEach(el => el.disabled = !consent.checked);
+        $("category").disabled = !consent.checked || busy;
+        $("browse").disabled = !consent.checked || busy;
+        $("next-page").disabled = !consent.checked || busy || nextOffset === null;
         $("find").disabled = !consent.checked || busy;
         $("find").textContent = busy ? "Finding ideas…" : "Explore support ideas";
         $("result-region").setAttribute("aria-busy", String(busy));
@@ -241,7 +249,8 @@
       }
       function invalidate(clearInput = false) {
         epoch++; if (pending) pending.abort(); pending = null; busy = false;
-        if (clearInput) { barrier.value = ""; mode.value = "any"; }
+        nextOffset = null;
+        if (clearInput) { barrier.value = ""; mode.value = "any"; $("category").value = ""; }
         $("handoff").close(); $("checklist").replaceChildren();
         $("handoff-resource").textContent = ""; $("handoff-message").textContent = "";
         $("result-count").textContent = consent.checked ? "Ready when you are" : "Awaiting consent";
@@ -277,27 +286,53 @@
           if (generation === epoch) { busy = false; pending = null; sync(); }
         }
       }
-      function render(items) {
+      function render(items, ranked = true) {
         results.replaceChildren();
         items.forEach((item, index) => {
           const card = node("article", undefined, "resource");
           const head = node("div", undefined, "resource-head");
-          head.append(node("span", String(index + 1).padStart(2, "0") + " / " + item.category, "rank"), node("span", "Fictional support", "pill"));
+          head.append(node("span", (ranked ? String(index + 1).padStart(2, "0") + " / " : "") + item.category, "rank"), node("span", "Fictional support", "pill"));
           const metadata = node("div", undefined, "metadata");
           [item.cost, item.modes.join(" + "), item.language].forEach(value => metadata.append(node("span", value, "pill")));
           const explanation = node("div", undefined, "explain");
-          explanation.append(node("strong", "Why this appeared"), node("p", item.explanation));
-          const scoreBar = node("div", undefined, "score-bar");
-          const fill = node("div", undefined, "score-fill");
-          fill.style.width = `${Math.max(0, Math.min(1, item.score)) * 100}%`;
-          scoreBar.append(fill);
-          explanation.append(node("div", `Cosine similarity ${item.score.toFixed(3)} · not a probability`, "score"), scoreBar);
+          if (ranked) {
+            explanation.append(node("strong", "Why this appeared"), node("p", item.explanation));
+            const scoreBar = node("div", undefined, "score-bar");
+            const fill = node("div", undefined, "score-fill");
+            fill.style.width = `${Math.max(0, Math.min(1, item.score)) * 100}%`;
+            scoreBar.append(fill);
+            explanation.append(node("div", `Cosine similarity ${item.score.toFixed(3)} · not a probability`, "score"), scoreBar);
+          } else explanation.append(node("p", "Catalog browsing only. Not ranked against your description."));
           const button = node("button", "Preview human handoff");
           button.setAttribute("aria-label", `Preview human handoff for ${item.title}`);
           button.type = "button"; button.addEventListener("click", () => handoff(item.id));
           card.append(head, node("h3", item.title), node("p", item.description, "description"), metadata, explanation, node("p", item.availability, "availability"), button);
           results.append(card);
         });
+      }
+      async function browseCatalog(offset = 0) {
+        if (!consent.checked || busy) return;
+        invalidate(); const generation = epoch; busy = true; sync();
+        message("Browsing fictional metadata only; no description is processed…");
+        try {
+          const payload = {consent: true, mode: mode.value, offset, limit: 6};
+          if ($("category").value) payload.category = $("category").value;
+          const data = await request("/api/browse", payload);
+          if (generation !== epoch || !consent.checked) return;
+          const selected = $("category").value;
+          $("category").replaceChildren(new Option("All categories", ""),
+            ...data.categories.map(category => new Option(category, category)));
+          $("category").value = selected;
+          nextOffset = data.next_offset;
+          $("result-count").textContent = `${data.offset + (data.results.length ? 1 : 0)}–${data.offset + data.results.length} of ${data.total} catalog ideas`;
+          if (data.results.length) render(data.results, false);
+          else empty("No catalog options in this format.", "Try all categories or any format. This is not a denial of support.");
+          message(data.message);
+        } catch (error) {
+          if (generation === epoch && error.name !== "AbortError") message("Catalog could not load. Check the local Python server and try browsing again.", true);
+        } finally {
+          if (generation === epoch) { busy = false; pending = null; sync(); }
+        }
       }
       $("finder").addEventListener("submit", async event => {
         event.preventDefault();
@@ -320,6 +355,9 @@
       consent.addEventListener("change", () => invalidate(!consent.checked));
       barrier.addEventListener("input", () => invalidate());
       mode.addEventListener("change", () => invalidate());
+      $("category").addEventListener("change", () => invalidate());
+      $("browse").addEventListener("click", () => browseCatalog());
+      $("next-page").addEventListener("click", () => browseCatalog(nextOffset));
       document.querySelectorAll("[data-preset]").forEach(button => button.addEventListener("click", () => {
         if (!consent.checked) return;
         invalidate(); barrier.value = button.dataset.preset; barrier.focus();

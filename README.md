@@ -88,6 +88,12 @@ counts, tokenizer limitations and provenance without reading any description.
 `python -m guardian inspect --model models\tfidf.json` additionally validates a
 saved artifact against the deterministic refit. It exits nonzero for an invalid
 artifact and does not expose arbitrary artifact content or weights.
+The dashboard has a separate “Browse fictional catalog” action which works with
+an empty description. Categories populate from the current catalog, format
+filters still apply, and “Next catalog page” advances a bounded page. Browsed
+cards deliberately show no similarity score or rank. Withdrawal clears them.
+Browser smoke runs use unique run/profile folders so concurrent runs cannot
+delete each other's browser profiles.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
