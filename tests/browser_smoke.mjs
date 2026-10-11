@@ -113,11 +113,16 @@ try {
   await run("document.getElementById('relax-format').click()");
   await until(() => run("document.querySelectorAll('.resource').length > 0"), "explicit any-format retry");
   assert.equal(await run("document.getElementById('mode').value"), "any");
+  const beforeRejected = urls.filter(url => url.includes("/api/match")).length;
   await run("document.getElementById('barrier').value = 'a@example.invalid'; document.getElementById('barrier').dispatchEvent(new Event('input')); document.getElementById('find').click()");
   await until(() => run("document.getElementById('status').dataset.error === 'true'"), "invalid input");
   assert.ok((await run("document.getElementById('status').textContent")).includes("Remove"));
+  assert.equal(urls.filter(url => url.includes("/api/match")).length, beforeRejected, "Obvious identifiers rejected before transport");
+  assert.equal(await run("document.getElementById('barrier').getAttribute('aria-invalid')"), "true");
+  assert.equal(await run("document.activeElement.id"), "barrier");
   await run("document.getElementById('clear').click()");
   assert.equal(await run("!document.getElementById('consent').checked && document.getElementById('find').disabled"), true);
+  assert.equal(await run("document.getElementById('barrier').getAttribute('aria-invalid')"), "false");
 
   await run(`window.savedFetch = window.fetch; window.fetch = async (...args) => {
     const response = await window.savedFetch(...args);

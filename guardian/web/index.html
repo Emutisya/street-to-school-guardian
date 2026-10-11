@@ -199,8 +199,9 @@
           <button type="button" data-preset="Caregiving leaves little time for study. We need flexible timing." disabled>Flexible time</button>
         </div>
         <label class="field-label" for="barrier">General barrier to learning</label>
-        <textarea id="barrier" maxlength="800" placeholder="For example: Internet data is expensive and paper lessons would help." aria-describedby="input-help" disabled required autocomplete="off" spellcheck="false"></textarea>
+        <textarea id="barrier" maxlength="800" placeholder="For example: Internet data is expensive and paper lessons would help." aria-describedby="input-help barrier-error" disabled required autocomplete="off" spellcheck="false"></textarea>
         <div class="field-help" id="input-help">800 characters maximum. Words only; no identifying information. Obvious numbers, links and contact details are rejected, but this is not an anonymizer.</div>
+        <p id="barrier-error" class="field-help" hidden></p>
         <label class="field-label" for="mode">Preferred support format</label>
         <select id="mode" disabled><option value="any">Any demo format</option><option value="offline">Offline / in-person ideas</option><option value="online">Online ideas</option></select>
         <div class="field-help">This filters fictional formats, not availability or entitlement. Catalog descriptions are English-only.</div>
@@ -267,6 +268,18 @@
       function message(text, error = false) {
         status.textContent = text; status.dataset.error = String(error);
       }
+      function fieldError(text = "") {
+        barrier.setAttribute("aria-invalid", String(Boolean(text)));
+        $("barrier-error").textContent = text; $("barrier-error").hidden = !text;
+      }
+      function validateExample() {
+        const text = barrier.value;
+        if (!text.trim()) return "Describe a fictional general barrier without identifying anyone.";
+        if ([...text].length > 800) return "Use at most 800 characters.";
+        if (/[@\p{Decimal_Number}]|https?:\/\/|www\./iu.test(text)) return "Remove numbers, dates, coordinates, links and contact details. Use general words only.";
+        if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(text)) return "Remove control characters from the description.";
+        return "";
+      }
       function openDialog(id, trigger) {
         dialogTriggers.set(id, trigger);
         const dialog = $(id), heading = dialog.querySelector("h2");
@@ -325,6 +338,7 @@
       function invalidate(clearInput = false) {
         epoch++; if (pending) pending.abort(); pending = null; busy = false;
         nextOffset = null;
+        fieldError();
         if (clearInput) { barrier.value = ""; mode.value = "any"; $("category").value = ""; choices.clear(); showChoices(); }
         $("comparison").close(); $("comparison-cards").replaceChildren();
         $("comparison-message").textContent = ""; $("shared-modes").textContent = "";
@@ -347,7 +361,10 @@
           cache: "no-store", credentials: "omit"
         });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || "The local request could not be processed.");
+        if (!response.ok) {
+          const error = new Error(data.error || "The local request could not be processed.");
+          error.status = response.status; throw error;
+        }
         return data;
       }
       async function handoff(id, trigger) {
@@ -506,6 +523,8 @@
       $("finder").addEventListener("submit", async event => {
         event.preventDefault();
         if (!consent.checked || busy) return;
+        const issue = validateExample();
+        if (issue) { invalidate(); fieldError(issue); message(issue, true); barrier.focus(); return; }
         invalidate(); const generation = epoch; busy = true; sync();
         message("Matching against the fictional catalog on your computer…");
         try {
@@ -516,7 +535,12 @@
           else noMatch(data);
           message(data.message);
         } catch (error) {
-          if (generation === epoch && error.name !== "AbortError") message(error.name === "TimeoutError" ? "The local matching request timed out. Check the Python server and try again." : error.message || "Local server unavailable. Start python -m guardian serve.", true);
+          if (generation === epoch && error.name !== "AbortError") {
+            const text = error.name === "TimeoutError" ? "The local matching request timed out. Check the Python server and try again."
+              : error.name === "TypeError" ? "Local server unavailable. Start python -m guardian serve and try again." : error.message;
+            if (error.status === 400) { fieldError(text); barrier.focus(); }
+            message(text, true);
+          }
         } finally {
           if (generation === epoch) { busy = false; pending = null; sync(); }
         }

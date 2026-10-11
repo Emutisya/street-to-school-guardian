@@ -119,6 +119,11 @@ responses without withdrawing consent or erasing the current anonymous example.
 It appears only while a request is pending. Canceling a browser request cannot
 undo server processing which has already completed; reset/withdrawal additionally
 clear the example and transient choices.
+Obvious numbers, contact markers, links and control characters are rejected in
+the page before transport as well as by the authoritative server gate. Errors
+are linked to the textarea, marked with `aria-invalid`, and focus the field for
+correction; editing/reset clears stale error state. This conservative backstop
+does not anonymize names or make private input safe.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
