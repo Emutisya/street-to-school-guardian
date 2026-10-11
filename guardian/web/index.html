@@ -151,6 +151,13 @@
     @media (max-width: 950px) { .workspace { grid-template-columns: 320px minmax(0, 1fr); } .hero { gap: 24px; } .panel { padding: 20px; } }
     @media (max-width: 760px) { .workspace, .hero, .principles { grid-template-columns: 1fr; } .hero { padding-top: 28px; } .path { display: none; } .wrap { width: calc(100% - 32px); } .nav-right .pill { display: none; } .brand { font-size: 14px; } .resource-head { align-items: flex-start; } }
     @media (prefers-reduced-motion: no-preference) { button { transition: background .15s, border-color .15s; } }
+    @media print {
+      body > * { display: none !important; }
+      body::before { content: "Nothing to print. Open a fictional conversation plan and explicitly choose its print action."; }
+      body[data-print-plan="true"]::before { content: none; }
+      body[data-print-plan="true"] #planning { display: block !important; position: static; max-width: none; width: 100%; border: none; }
+      #planning button, #planning .print-consent, #planning input { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -219,6 +226,7 @@
       <p class="subtle">Choose up to three fictional supports. These catalog IDs stay only in this page's memory, contain no barrier text and are cleared on reset or withdrawal. Selection is not an application.</p>
       <ul id="choice-list"></ul>
       <button id="compare" type="button" disabled>Compare chosen supports</button>
+      <button id="prepare-plan" type="button" disabled>Prepare fictional conversation plan</button>
     </section>
     <section class="principles" aria-label="Safeguarding principles">
       <div><h3>Match needs, never monitor children</h3><p>No attendance feeds, individual profiles, surveillance, GPS, dropout labels, eligibility predictions or punitive actions.</p></div>
@@ -229,6 +237,15 @@
   <footer><div class="wrap">Street to School Guardian · Synthetic data only · No external APIs, analytics, keys or downloaded models · If facing immediate danger, seek appropriate trusted local help outside this demo.</div></footer>
   <dialog id="handoff" aria-labelledby="handoff-title"><div class="step">03 / HUMAN HANDOFF SIMULATION</div><h2 id="handoff-title">A conversation, not a referral</h2><p id="handoff-resource" class="terms"></p><p id="handoff-message" class="subtle"></p><ol id="checklist"></ol><button id="close-dialog" type="button">Return to ideas</button></dialog>
   <dialog id="comparison" aria-labelledby="comparison-title"><h2 id="comparison-title">Fictional support comparison</h2><p id="comparison-message" class="subtle"></p><p id="shared-modes"></p><div id="comparison-cards" class="comparison-grid"></div><button id="close-comparison" type="button">Return to choices</button></dialog>
+  <dialog id="planning" aria-labelledby="plan-title">
+    <h2 id="plan-title">Fictional conversation checklist</h2>
+    <p id="plan-message" class="subtle"></p><ul id="plan-resources"></ul>
+    <h3>Questions for human verification</h3><ul id="plan-verification"></ul>
+    <p id="plan-privacy" class="subtle"></p>
+    <div class="consent print-consent"><input id="print-consent" type="checkbox"><label for="print-consent">I choose to print this fictional checklist only. Printing may create a paper or file copy outside this page; no barrier description or private notes are included.</label></div>
+    <button id="print-plan" type="button" disabled>Print fictional checklist only</button>
+    <button id="close-plan" type="button">Return to choices</button>
+  </dialog>
   <script>
     (() => {
       // Preserve the mandated initial script while correctly supporting explicit light.
@@ -254,6 +271,8 @@
         $("browse").disabled = !consent.checked || busy;
         $("next-page").disabled = !consent.checked || busy || nextOffset === null;
         $("compare").disabled = !consent.checked || busy || choices.size < 2;
+        $("prepare-plan").disabled = !consent.checked || busy || choices.size < 1;
+        $("print-plan").disabled = !consent.checked || !$("print-consent").checked || !$("planning").open;
         $("choice-list").querySelectorAll("button").forEach(button => button.disabled = busy || !consent.checked);
         $("find").disabled = !consent.checked || busy;
         $("find").textContent = busy ? "Finding ideas…" : "Explore support ideas";
@@ -271,6 +290,9 @@
         if (clearInput) { barrier.value = ""; mode.value = "any"; $("category").value = ""; choices.clear(); showChoices(); }
         $("comparison").close(); $("comparison-cards").replaceChildren();
         $("comparison-message").textContent = ""; $("shared-modes").textContent = "";
+        $("planning").close(); $("plan-resources").replaceChildren(); $("plan-verification").replaceChildren();
+        $("plan-message").textContent = ""; $("plan-privacy").textContent = "";
+        $("print-consent").checked = false; delete document.body.dataset.printPlan;
         $("handoff").close(); $("checklist").replaceChildren();
         $("handoff-resource").textContent = ""; $("handoff-message").textContent = "";
         $("result-count").textContent = consent.checked ? "Ready when you are" : "Awaiting consent";
@@ -385,6 +407,40 @@
         }
       });
       $("close-comparison").addEventListener("click", () => $("comparison").close());
+      $("prepare-plan").addEventListener("click", async () => {
+        if (!consent.checked || busy || !choices.size) return;
+        const generation = epoch; busy = true; sync();
+        try {
+          const data = await request("/api/plan", {consent: true, resource_ids: [...choices.keys()]});
+          if (generation !== epoch || !consent.checked) return;
+          $("plan-message").textContent = data.message; $("plan-privacy").textContent = data.privacy;
+          $("plan-resources").replaceChildren(...data.resources.map(item => {
+            const li = node("li"); li.append(node("strong", item.title), node("p", item.conversation)); return li;
+          }));
+          $("plan-verification").replaceChildren(...data.verification.map((text, index) => {
+            const li = node("li"), check = node("input"), label = node("label", ` ${text}`);
+            check.type = "checkbox"; check.id = `verify-${index}`; label.htmlFor = check.id;
+            li.append(check, label); return li;
+          }));
+          $("print-consent").checked = false;
+          $("planning").showModal();
+        } catch (error) {
+          if (generation === epoch && error.name !== "AbortError") message("Plan preview could not load. Check the local server and try again.", true);
+        } finally {
+          if (generation === epoch) { busy = false; pending = null; sync(); }
+        }
+      });
+      $("close-plan").addEventListener("click", () => $("planning").close());
+      $("print-consent").addEventListener("change", sync);
+      $("planning").addEventListener("close", () => {
+        $("print-consent").checked = false; delete document.body.dataset.printPlan; sync();
+      });
+      $("print-plan").addEventListener("click", () => {
+        if (!consent.checked || !$("print-consent").checked || !$("planning").open) return;
+        document.body.dataset.printPlan = "true";
+        try { window.print(); } finally { delete document.body.dataset.printPlan; }
+      });
+      window.addEventListener("afterprint", () => { delete document.body.dataset.printPlan; });
       async function browseCatalog(offset = 0) {
         if (!consent.checked || busy) return;
         invalidate(); const generation = epoch; busy = true; sync();

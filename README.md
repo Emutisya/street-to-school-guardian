@@ -99,6 +99,12 @@ dashboard comparison. The transient shortlist stores catalog IDs/titles only in
 page memory, never barrier text, notes or browser storage. Remove buttons have
 resource-specific labels. Comparison requires at least two choices and explicit
 consent; reset and withdrawal clear both choices and dialog contents.
+The temporary choices can produce a fictional conversation checklist. Verification
+checkboxes are transient reminders, not recorded outcomes. Printing requires a
+separate explicit checkbox explaining that the system print destination is outside
+the page. Print styles exclude the barrier form and all other page content; direct
+printing without the explicit checklist action shows only a neutral instruction.
+No real recipient, appointment, contact or referral is created.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

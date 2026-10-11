@@ -113,6 +113,18 @@ try {
   assert.equal(await run("document.getElementById('comparison-cards').children.length"), 2);
   assert.ok((await run("document.getElementById('comparison-message').textContent")).includes("No option is preferred"));
   await run("document.getElementById('close-comparison').click()");
+  await run("document.getElementById('prepare-plan').click()");
+  await until(() => run("document.getElementById('planning').open"), "fictional planning checklist");
+  assert.equal(await run("document.getElementById('print-plan').disabled"), true);
+  assert.equal(await run("document.getElementById('plan-resources').children.length"), 2);
+  await run("window.printed = false; window.print = () => { window.printed = document.body.dataset.printPlan === 'true'; }; document.getElementById('print-consent').click(); document.getElementById('print-plan').click()");
+  assert.equal(await run("window.printed && !document.body.dataset.printPlan"), true, "Print requires explicit transient authorization");
+  await rpc("Emulation.setEmulatedMedia", {media: "print"});
+  assert.equal(await run("getComputedStyle(document.querySelector('main')).display"), "none", "Print never exposes barrier form");
+  assert.equal(await run("getComputedStyle(document.getElementById('planning')).display"), "none", "Direct printing has no authorized plan");
+  await rpc("Emulation.setEmulatedMedia", {media: ""});
+  await run("document.getElementById('close-plan').click()");
+  assert.equal(await run("document.getElementById('print-consent').checked"), false);
   await run("document.getElementById('next-page').click()");
   await until(() => run("document.getElementById('result-count').textContent === '7–12 of 12 catalog ideas'"), "catalog pagination");
   await run("document.getElementById('category').value = 'Food'; document.getElementById('category').dispatchEvent(new Event('change')); document.getElementById('browse').click()");
