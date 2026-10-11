@@ -213,6 +213,12 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(json.loads(body)["status"], "simulation_only")
 
     def test_http_no_match_and_input_errors(self):
+        for raw in ('{"consent":false,"consent":true,"text":"bus fares"}',
+                    json.dumps({"consent": True, "text": "bus fares"}).encode("utf-16")):
+            self.assertEqual(self.request("/api/match", raw=raw)[0], 400)
+        self.assertEqual(self.request("/api/match", raw="{}", headers={
+            "Content-Type": "application/json", "Content-Length": "+2",
+        })[0], 400)
         status, _, body = self.request("/api/match", {"consent": True, "text": "volcano fossils"})
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body)["status"], "no_match")

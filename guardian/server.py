@@ -11,6 +11,15 @@ HTML = Path(__file__).parent / "web" / "index.html"
 MAX_BODY = 4096
 
 
+def unique_fields(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError("Duplicate JSON fields are not accepted.")
+        result[key] = value
+    return result
+
+
 def create_server(model, port=8765):
     class Handler(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.0"
@@ -78,7 +87,11 @@ def create_server(model, port=8765):
                 if self.headers.get("Transfer-Encoding") is not None:
                     raise RequestError("Chunked requests are not supported.", 400)
                 try:
-                    size = int(self.headers.get("Content-Length", "0"))
+                    length = self.headers.get("Content-Length", "")
+                    if (len(self.headers.get_all("Content-Length", [])) != 1
+                            or not length.isascii() or not length.isdigit()):
+                        raise ValueError("One decimal Content-Length is required.")
+                    size = int(length)
                 except ValueError:
                     raise RequestError("Invalid Content-Length.") from None
                 if size <= 0 or size > MAX_BODY:
@@ -87,11 +100,13 @@ def create_server(model, port=8765):
                 if len(raw) != size:
                     raise RequestError("Incomplete request body.")
                 try:
-                    payload = json.loads(raw)
+                    payload = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_fields)
                 except (ValueError, UnicodeDecodeError, RecursionError):
                     raise RequestError("Send valid UTF-8 JSON.") from None
                 result = match(model, payload) if self.path == "/api/match" else handoff(model, payload)
                 self.reply(200, result)
+            except TimeoutError:
+                self.reply(408, {"error": "Request body timed out. Send a complete JSON request."})
             except RequestError as exc:
                 self.reply(exc.status, {"error": str(exc)})
 
