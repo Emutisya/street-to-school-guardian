@@ -15,7 +15,7 @@ from unittest.mock import patch
 from guardian.model import DATA_DIR, Retriever, evaluate, evaluate_formats, load_catalog, tokens
 from guardian.server import create_server
 from guardian.reporting import compare_evaluation, save_evaluation
-from guardian.service import RequestError, browse, compare, handoff, match, plan
+from guardian.service import RequestError, browse, compare, handoff, match, plan, related
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -396,6 +396,18 @@ class ConsentTests(unittest.TestCase):
             with self.assertRaises(RequestError):
                 plan(self.model, {**payload, **extra})
 
+    def test_related_catalog_excludes_source_and_limits_copied_results(self):
+        payload = {"consent": True, "resource_id": "connectivity", "mode": "offline", "limit": 2}
+        result = related(self.model, payload)
+        self.assertLessEqual(len(result["results"]), 2)
+        self.assertNotIn("connectivity", [row["id"] for row in result["results"]])
+        self.assertTrue(all("offline" in row["modes"] for row in result["results"]))
+        self.assertEqual(result["results"], [row for row in self.model.rank(self.model.catalog[3]["description"], "offline", 12)
+                                            if row["id"] != "connectivity"][:2])
+        for extra in ({"consent": False}, {"text": "not accepted"}, {"limit": True}, {"resource_id": "missing"}):
+            with self.assertRaises(RequestError):
+                related(self.model, {**payload, **extra})
+
 
 class HTTPTests(unittest.TestCase):
     @classmethod
@@ -484,6 +496,11 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(headers["Cache-Control"], "no-store")
         self.assertEqual(self.request("/api/plan", {**payload, "consent": False})[0], 403)
 
+    def test_http_related_catalog_requires_consent(self):
+        payload = {"consent": True, "resource_id": "connectivity"}
+        self.assertEqual(json.loads(self.request("/api/related", payload)[2]), related(self.model, payload))
+        self.assertEqual(self.request("/api/related", {**payload, "consent": False})[0], 403)
+
     def test_http_no_match_and_input_errors(self):
         for raw in ('{"consent":false,"consent":true,"text":"bus fares"}',
                     json.dumps({"consent": True, "text": "bus fares"}).encode("utf-16")):
@@ -568,6 +585,12 @@ class CLITests(unittest.TestCase):
             self.assertEqual(allowed.returncode, 0, allowed.stderr)
             self.assertIn("resources", json.loads(allowed.stdout))
         self.assertEqual(self.run_cli("plan", "--consent", "missing").returncode, 2)
+
+    def test_cli_related_catalog_reads_no_barrier(self):
+        run = self.run_cli("related", "--consent", "connectivity", "--limit", "2", text="ignored stdin")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertEqual(json.loads(run.stdout)["source_id"], "connectivity")
+        self.assertNotIn("ignored stdin", run.stdout)
 
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:

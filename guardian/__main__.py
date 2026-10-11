@@ -6,7 +6,7 @@ import sys
 from .model import Retriever, evaluate, evaluate_formats, load_catalog
 from .reporting import compare_evaluation, save_evaluation
 from .server import create_server
-from .service import RequestError, browse, compare, match, plan
+from .service import RequestError, browse, compare, match, plan, related
 
 
 def main():
@@ -38,6 +38,11 @@ def main():
         selected = commands.add_parser(name, help=f"Create a fictional {name} from catalog IDs only")
         selected.add_argument("--consent", action="store_true")
         selected.add_argument("resource_ids", nargs="+")
+    neighbors = commands.add_parser("related", help="Explore bounded catalog-description similarities without a barrier")
+    neighbors.add_argument("--consent", action="store_true")
+    neighbors.add_argument("resource_id")
+    neighbors.add_argument("--mode", choices=["any", "offline", "online"], default="any")
+    neighbors.add_argument("--limit", type=int, default=3)
     args = parser.parse_args()
     if args.command == "serve" and not 0 <= args.port <= 65535:
         parser.error("--port must be between 0 and 65535; use 0 to choose an available port.")
@@ -66,6 +71,9 @@ def main():
             print(json.dumps(operation(model, {
                 "consent": args.consent, "resource_ids": args.resource_ids
             }), indent=2))
+        elif args.command == "related":
+            print(json.dumps(related(model, {"consent": args.consent, "resource_id": args.resource_id,
+                                            "mode": args.mode, "limit": args.limit}), indent=2))
         elif args.command == "recommend":
             if not args.consent:
                 raise RequestError("Use --consent only after agreeing to process an anonymous description.", 403)

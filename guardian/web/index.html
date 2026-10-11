@@ -415,8 +415,29 @@
           select.setAttribute("aria-pressed", String(choices.has(item.id)));
           select.addEventListener("click", () => toggleChoice(item));
           card.append(select);
+          const neighbors = node("button", "Explore related fictional descriptions"); neighbors.type = "button";
+          neighbors.setAttribute("aria-label", `Explore related fictional descriptions for ${item.title}`);
+          neighbors.dataset.related = item.id;
+          neighbors.addEventListener("click", () => relatedDescriptions(item.id));
+          card.append(neighbors);
           results.append(card);
         });
+      }
+      async function relatedDescriptions(id) {
+        if (!consent.checked || busy) return;
+        invalidate(); const generation = epoch; busy = true; sync();
+        try {
+          const data = await request("/api/related", {consent: true, resource_id: id, mode: mode.value});
+          if (generation !== epoch || !consent.checked) return;
+          $("result-count").textContent = `${data.results.length} related catalog ideas`;
+          if (data.results.length) render(data.results);
+          else empty("No close catalog neighbors.", "This fictional description has no other close catalog match in the chosen format. This is not a denial of support.");
+          message(`Related to ${data.source_title}. ${data.message}`);
+        } catch (error) {
+          if (generation === epoch && error.name !== "AbortError") message("Related catalog descriptions could not load. Check the local server and try again.", true);
+        } finally {
+          if (generation === epoch) { busy = false; pending = null; sync(); }
+        }
       }
       function showChoices() {
         $("choice-list").replaceChildren();

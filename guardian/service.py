@@ -88,6 +88,23 @@ def plan(model, payload):
     }
 
 
+def related(model, payload):
+    consent_fields(payload, {"resource_id", "mode", "limit"})
+    rid = validate({"consent": True, "resource_id": payload.get("resource_id")}, "handoff")
+    source = next((row for row in model.catalog if row["id"] == rid), None)
+    if source is None:
+        raise RequestError("Unknown demo resource.", 404)
+    mode, limit = payload.get("mode", "any"), payload.get("limit", 3)
+    if not isinstance(mode, str) or mode not in {"any", "offline", "online"}:
+        raise RequestError("Mode must be any, offline or online.")
+    if type(limit) is not int or not 1 <= limit <= 3:
+        raise RequestError("Choose one through three related fictional descriptions.")
+    rows = [row for row in model.rank(source["description"], mode, len(model.catalog)) if row["id"] != rid]
+    return {"status": "catalog_similarity_only", "source_id": rid, "source_title": source["title"],
+            "results": rows[:limit],
+            "message": "Similar fictional catalog descriptions only. Your barrier is not processed; similarity is not suitability, availability or a referral."}
+
+
 def validate(payload, action="match"):
     if not isinstance(payload, dict):
         raise RequestError("Send a JSON object.")

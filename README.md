@@ -157,6 +157,11 @@ fields. Changes return case IDs and catalog IDs, never arbitrary snapshot text.
 Snapshot parsing is strict UTF-8, bounded to 256 KiB, rejects duplicate fields and
 nonfinite JSON constants, and handles excessive nesting as a normal nonzero CLI
 validation failure without a traceback or raw-content echo.
+Each card can explore up to three related fictional *catalog descriptions*,
+excluding itself. This uses the selected catalog description, not the barrier
+textarea, with the same fixed cosine threshold and format filter. It makes no
+suitability or availability claim. API: `POST /api/related`; CLI:
+`python -m guardian related --consent connectivity --mode offline --limit 2`.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

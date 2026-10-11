@@ -166,6 +166,12 @@ try {
   assert.ok((await run("document.getElementById('results').textContent")).includes("Food and learning"));
   await run("document.getElementById('clear').click()");
   assert.equal(await run("document.getElementById('choice-list').children.length"), 0, "Reset clears temporary choices");
+  await run("document.getElementById('consent').click(); document.getElementById('browse').click()");
+  await until(() => run("document.querySelectorAll('[data-related]').length === 6"), "related browsing controls");
+  await run("document.querySelector('[data-related]').click()");
+  await until(() => run("document.getElementById('result-count').textContent.includes('related catalog ideas')"), "related catalog response");
+  assert.equal(await run("document.getElementById('barrier').value"), "", "Related descriptions never need a barrier");
+  await run("document.getElementById('clear').click()");
 
   // Artificially delay the response to ensure revocation cannot render late results.
   await run(`window.originalFetch = window.fetch; window.fetch = async (...args) => {
