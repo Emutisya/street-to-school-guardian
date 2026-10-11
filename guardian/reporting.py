@@ -47,7 +47,13 @@ def compare_evaluation(model, path):
                 raise ValueError("Duplicate snapshot fields.")
             result[key] = value
         return result
-    previous = json.loads(raw.decode("utf-8"), object_pairs_hook=unique)
+    def reject_constant(_value):
+        raise ValueError("Nonfinite JSON constants are not accepted.")
+    try:
+        previous = json.loads(raw.decode("utf-8"), object_pairs_hook=unique,
+                              parse_constant=reject_constant)
+    except (ValueError, RecursionError):
+        raise ValueError("Use complete strict UTF-8 JSON with unique fields and finite numbers.") from None
     if (not isinstance(previous, dict) or set(previous) != set(current)
             or any(previous[field] != current[field] for field in
                    ("catalog_sha256", "benchmark_sha256", "threshold", "note"))

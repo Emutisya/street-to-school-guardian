@@ -640,6 +640,23 @@ class CLITests(unittest.TestCase):
         finally:
             path.unlink(missing_ok=True)
 
+    def test_snapshot_parser_rejects_deep_duplicate_nonfinite_and_non_utf8_json_quietly(self):
+        path = ROOT / "models" / "parser-test.json"
+        try:
+            for raw in (
+                b"[" * 2000 + b"]" * 2000,
+                b'{"cases":[],"cases":[]}',
+                b'{"metric":NaN}',
+                "{}".encode("utf-16"),
+            ):
+                path.write_bytes(raw)
+                run = self.run_cli("compare-evaluation", str(path))
+                self.assertEqual(run.returncode, 2)
+                self.assertEqual(run.stdout, "")
+                self.assertNotIn("Traceback", run.stderr)
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_cli_inspect_validates_artifacts_and_reports_catalog_geometry(self):
         fitted = self.run_cli("inspect")
         self.assertEqual(fitted.returncode, 0, fitted.stderr)

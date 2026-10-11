@@ -154,6 +154,9 @@ and threshold. Case identities/text/labels must exactly match the bundled
 synthetic benchmark and ranks must be distinct catalog IDs. Metrics are recomputed
 from ranks across standard and challenge cases, not trusted from stored aggregate
 fields. Changes return case IDs and catalog IDs, never arbitrary snapshot text.
+Snapshot parsing is strict UTF-8, bounded to 256 KiB, rejects duplicate fields and
+nonfinite JSON constants, and handles excessive nesting as a normal nonzero CLI
+validation failure without a traceback or raw-content echo.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
