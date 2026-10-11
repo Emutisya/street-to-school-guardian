@@ -209,6 +209,10 @@ Catalog browsing can sort by stable ID, title or category using a fixed enum:
 API `sort`, CLI `browse --sort title`, or the dashboard display-order selector.
 Case-folded alphabetic ties use resource ID for reproducible paging. Sorting
 never adds a score, changes eligibility or processes the barrier description.
+Temporary choices have their own clear action which erases choices and generated
+previews while preserving consent, the current example and displayed catalog.
+Removing a focused choice advances focus to a remaining remove button or the
+matching visible card, instead of dropping keyboard users onto the document body.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

@@ -145,7 +145,9 @@ try {
   await until(() => run("document.querySelectorAll('.resource').length === 6"), "catalog browse without input");
   assert.equal(await run("document.getElementById('barrier').value"), "");
   assert.equal(await run("!!document.querySelector('.score')"), false, "Catalog is not ranked");
-  await run("document.querySelectorAll('[data-choice]')[0].click(); document.querySelectorAll('[data-choice]')[1].click(); document.getElementById('compare').click()");
+  await run("document.querySelectorAll('[data-choice]')[0].click(); document.querySelectorAll('[data-choice]')[1].click(); document.querySelector('#choice-list button').focus(); document.querySelector('#choice-list button').click()");
+  assert.equal(await run("document.activeElement.closest('#choice-list') !== null"), true, "Removing focused choice advances to remaining choice");
+  await run("document.querySelectorAll('[data-choice]')[0].click(); document.getElementById('compare').click()");
   await until(() => run("document.getElementById('comparison').open"), "comparison dialog");
   assert.equal(await run("document.getElementById('comparison-cards').children.length"), 2);
   assert.ok((await run("document.getElementById('comparison-message').textContent")).includes("No option is preferred"));
@@ -164,6 +166,9 @@ try {
   await run("document.getElementById('close-plan').click()");
   await until(() => run("document.activeElement.id === 'prepare-plan'"), "plan focus restored");
   assert.equal(await run("document.getElementById('print-consent').checked"), false);
+  await run("document.getElementById('clear-choices').click()");
+  assert.equal(await run("document.getElementById('choice-list').children.length === 0 && document.getElementById('consent').checked && document.querySelectorAll('.resource').length === 6"), true, "Choice-only reset preserves consent and cards");
+  assert.equal(await run("document.getElementById('plan-resources').children.length"), 0);
   await run("document.getElementById('next-page').click()");
   await until(() => run("document.getElementById('result-count').textContent === '7–12 of 12 catalog ideas'"), "catalog pagination");
   await run("document.getElementById('previous-page').click()");

@@ -236,6 +236,7 @@
       <ul id="choice-list"></ul>
       <button id="compare" type="button" disabled>Compare chosen supports</button>
       <button id="prepare-plan" type="button" disabled>Prepare fictional conversation plan</button>
+      <button id="clear-choices" type="button" disabled>Clear temporary choices only</button>
     </section>
     <section class="principles" aria-label="Safeguarding principles">
       <div><h3>Match needs, never monitor children</h3><p>No attendance feeds, individual profiles, surveillance, GPS, dropout labels, eligibility predictions or punitive actions.</p></div>
@@ -308,6 +309,7 @@
         $("previous-page").disabled = !consent.checked || busy || previousOffset === null;
         $("compare").disabled = !consent.checked || busy || choices.size < 2;
         $("prepare-plan").disabled = !consent.checked || busy || choices.size < 1;
+        $("clear-choices").disabled = !consent.checked || busy || choices.size < 1;
         $("print-plan").disabled = !consent.checked || !$("print-consent").checked || !$("planning").open;
         $("choice-list").querySelectorAll("button").forEach(button => button.disabled = busy || !consent.checked);
         $("find").disabled = !consent.checked || busy;
@@ -423,7 +425,7 @@
           select.type = "button"; select.dataset.choice = item.id;
           select.setAttribute("aria-label", `${choices.has(item.id) ? "Remove choice" : "Choose for comparison"}: ${item.title}`);
           select.setAttribute("aria-pressed", String(choices.has(item.id)));
-          select.addEventListener("click", () => toggleChoice(item));
+          select.addEventListener("click", () => toggleChoice(item, select));
           card.append(select);
           const neighbors = node("button", "Explore related fictional descriptions"); neighbors.type = "button";
           neighbors.setAttribute("aria-label", `Explore related fictional descriptions for ${item.title}`);
@@ -454,7 +456,7 @@
         choices.forEach(item => {
           const li = node("li", item.title), remove = node("button", "Remove");
           remove.type = "button"; remove.setAttribute("aria-label", `Remove chosen support: ${item.title}`);
-          remove.addEventListener("click", () => toggleChoice(item));
+          remove.addEventListener("click", () => toggleChoice(item, remove));
           li.append(remove); $("choice-list").append(li);
         });
         results.querySelectorAll("[data-choice]").forEach(button => {
@@ -466,14 +468,32 @@
         });
         sync();
       }
-      function toggleChoice(item) {
+      function toggleChoice(item, trigger) {
         if (!consent.checked || busy) return;
+        const index = [...$("choice-list").children].indexOf(trigger?.closest("li"));
         if (choices.has(item.id)) choices.delete(item.id);
         else if (choices.size < 3) choices.set(item.id, {id: item.id, title: item.title});
         else { message("Only three fictional choices can be compared. Remove a choice first.", true); return; }
         message(`${choices.size} temporary demo choices. No description or notes are saved.`);
         showChoices();
+        if (index >= 0) {
+          const remaining = [...$("choice-list").querySelectorAll("button")];
+          const focus = remaining[Math.min(index, remaining.length - 1)]
+            || [...results.querySelectorAll("[data-choice]")].find(button => button.dataset.choice === item.id)
+            || consent;
+          focus.focus();
+        }
       }
+      $("clear-choices").addEventListener("click", () => {
+        if (!consent.checked || busy) return;
+        choices.clear(); showChoices();
+        $("comparison-cards").replaceChildren(); $("comparison-message").textContent = ""; $("shared-modes").textContent = "";
+        $("plan-resources").replaceChildren(); $("plan-verification").replaceChildren();
+        $("plan-message").textContent = ""; $("plan-privacy").textContent = "";
+        $("print-consent").checked = false; delete document.body.dataset.printPlan;
+        message("Temporary choices and their previews cleared. Consent, current example and catalog cards remain.");
+        (results.querySelector("[data-choice]") || consent).focus();
+      });
       $("compare").addEventListener("click", async () => {
         if (!consent.checked || busy || choices.size < 2) return;
         const generation = epoch; busy = true; sync();
