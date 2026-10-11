@@ -231,11 +231,21 @@ try {
   await run("document.getElementById('theme').click()");
   await delay(200);
   assert.equal(await run("document.documentElement.dataset.theme"), "dark");
+  assert.equal(await run("document.getElementById('theme').getAttribute('aria-label')"), "Use light theme; currently dark");
   assert.equal(await run("document.documentElement.scrollWidth <= window.innerWidth"), true, "Mobile has no horizontal overflow");
   assert.equal(await run("localStorage.length === 0 && sessionStorage.length === 0"), true);
   const darkShot = await rpc("Page.captureScreenshot", {format: "png", captureBeyondViewport: true});
   await writeFile(path.join(artifacts, "mobile-dark.png"), Buffer.from(darkShot.data, "base64"));
-  assert.ok(urls.every(url => url.startsWith(base)), "Page sends only loopback requests");
+  await rpc("Page.navigate", {url:base});
+  await waitPage();
+  await rpc("Emulation.setEmulatedMedia", {features:[{name:"prefers-color-scheme",value:"dark"}]});
+  await until(() => run("document.documentElement.dataset.theme === 'dark'"), "system dark preference");
+  await rpc("Emulation.setEmulatedMedia", {features:[{name:"prefers-color-scheme",value:"light"}]});
+  await until(() => run("document.documentElement.dataset.theme === 'light'"), "live system light preference");
+  await run("document.getElementById('theme').click()");
+  await rpc("Emulation.setEmulatedMedia", {features:[{name:"prefers-color-scheme",value:"light"}]});
+  assert.equal(await run("document.documentElement.dataset.theme"), "dark", "Manual choice overrides system changes for this page");
+  assert.ok(urls.every(url => url.startsWith(base)), `Page sends only loopback requests: ${JSON.stringify(urls.filter(url => !url.startsWith(base)).map(url => url.slice(0, 160)))}`);
   assert.deepEqual(errors, [], "No browser exceptions or server stderr");
   console.log("PASS: consent, real HTTP ranking, handoff, withdrawal, no-match, invalid input, reset, late-response gate, themes, mobile layout, no storage, no external requests.");
 } catch (error) {

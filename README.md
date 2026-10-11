@@ -50,6 +50,9 @@ Escape cancels pending page work outside open dialogs, preserves the current
 anonymous example/consent, gates late output and restores input focus. Native
 dialog Escape dismissal remains unchanged; cancellation cannot undo completed
 server processing.
+The theme button announces both its next action and current color scheme.
+Without a URL/manual override, the page follows live system color-scheme changes;
+explicit choices remain authoritative for that page. No preference is stored.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

@@ -685,9 +685,22 @@
         }
       });
       $("close-dialog").addEventListener("click", () => $("handoff").close());
+      let manualTheme = explicit === "light" || explicit === "dark";
+      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)");
+      function syncTheme() {
+        const dark = document.documentElement.dataset.theme === "dark";
+        $("theme").textContent = dark ? "Use light theme" : "Use dark theme";
+        $("theme").setAttribute("aria-label", `${$("theme").textContent}; currently ${dark ? "dark" : "light"}`);
+      }
       $("theme").addEventListener("click", () => {
+        manualTheme = true;
         document.documentElement.dataset.theme = document.documentElement.dataset.theme === "dark" ? "light" : "dark";
+        syncTheme();
       });
+      systemTheme.addEventListener("change", event => {
+        if (!manualTheme) { document.documentElement.dataset.theme = event.matches ? "dark" : "light"; syncTheme(); }
+      });
+      syncTheme();
       window.addEventListener("pagehide", () => { consent.checked = false; invalidate(true); });
       if (location.protocol === "file:") message("Read-only preview. For real local ML inference, run python -m guardian serve and open http://127.0.0.1:8765.", true);
       sync();
