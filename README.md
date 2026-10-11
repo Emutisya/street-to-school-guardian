@@ -56,6 +56,9 @@ Catalog metadata can be browsed without a barrier description using consent-gate
 An optional `category` must match a returned category exactly. Results are stable
 by resource ID, copied from fictional metadata, and paginated with `next_offset`.
 This is browsing, not a relevance ranking, entitlement or availability check.
+The same bounded metadata view is available offline with
+`python -m guardian browse --consent --category Food --limit 2`.
+Use the returned `next_offset` with `--offset` for another page; no stdin is read.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

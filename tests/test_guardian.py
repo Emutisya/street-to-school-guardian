@@ -408,6 +408,15 @@ class CLITests(unittest.TestCase):
         for text in ["", "a@example.invalid"]:
             self.assertEqual(self.run_cli("recommend", "--consent", text=text).returncode, 2)
 
+    def test_cli_browse_accepts_only_catalog_filters(self):
+        self.assertEqual(self.run_cli("browse").returncode, 2)
+        result = self.run_cli("browse", "--consent", "--category", "Food", "--limit", "2")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["results"][0]["id"], "meal")
+        invalid = self.run_cli("browse", "--consent", "--offset", "-1")
+        self.assertEqual(invalid.returncode, 2)
+        self.assertEqual(invalid.stdout, "")
+
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))

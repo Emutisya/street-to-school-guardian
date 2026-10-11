@@ -5,7 +5,7 @@ import sys
 
 from .model import Retriever, evaluate, load_catalog
 from .server import create_server
-from .service import RequestError, match
+from .service import RequestError, browse, match
 
 
 def main():
@@ -20,6 +20,12 @@ def main():
     recommend = commands.add_parser("recommend", help="Read an anonymous example from stdin, not shell history")
     recommend.add_argument("--consent", action="store_true")
     recommend.add_argument("--mode", choices=["any", "offline", "online"], default="any")
+    catalog_command = commands.add_parser("browse", help="Browse fictional metadata without a barrier description")
+    catalog_command.add_argument("--consent", action="store_true")
+    catalog_command.add_argument("--mode", choices=["any", "offline", "online"], default="any")
+    catalog_command.add_argument("--category")
+    catalog_command.add_argument("--offset", type=int, default=0)
+    catalog_command.add_argument("--limit", type=int, default=6)
     args = parser.parse_args()
     if args.command == "serve" and not 0 <= args.port <= 65535:
         parser.error("--port must be between 0 and 65535; use 0 to choose an available port.")
@@ -31,6 +37,11 @@ def main():
             print(json.dumps({"output": args.output, "documents": len(catalog), "vocabulary": len(model.idf)}, indent=2))
         elif args.command == "evaluate":
             print(json.dumps(evaluate(model), indent=2))
+        elif args.command == "browse":
+            print(json.dumps(browse(model, {
+                "consent": args.consent, "mode": args.mode, "category": args.category,
+                "offset": args.offset, "limit": args.limit
+            }), indent=2))
         elif args.command == "recommend":
             if not args.consent:
                 raise RequestError("Use --consent only after agreeing to process an anonymous description.", 403)
