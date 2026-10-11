@@ -71,6 +71,23 @@ def compare(model, payload):
     }
 
 
+def plan(model, payload):
+    rows = selected_resources(model, payload)
+    return {
+        "status": "planning_only",
+        "message": "Anonymous fictional conversation plan. Nothing was sent, saved, booked or referred. A human must verify every real next step.",
+        "resources": [{"id": row["id"], "title": row["title"],
+                       "conversation": row["handoff"]} for row in rows],
+        "verification": [
+            "Check that a real service exists and is safe, accessible and currently available.",
+            "Ask about actual costs, formats, language and terms directly with a verified human.",
+            "Decide whether to proceed; disclose only minimum necessary information outside this demo.",
+            "Decline or withdraw at any time. This plan makes no family or eligibility decisions."
+        ],
+        "privacy": "No barrier text, names, contact details, routes or private notes belong in this plan."
+    }
+
+
 def validate(payload, action="match"):
     if not isinstance(payload, dict):
         raise RequestError("Send a JSON object.")

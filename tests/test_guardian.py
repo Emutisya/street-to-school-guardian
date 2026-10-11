@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from guardian.model import DATA_DIR, Retriever, evaluate, load_catalog, tokens
 from guardian.server import create_server
-from guardian.service import RequestError, browse, compare, handoff, match
+from guardian.service import RequestError, browse, compare, handoff, match, plan
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -293,6 +293,17 @@ class ConsentTests(unittest.TestCase):
         with self.assertRaises(RequestError):
             compare(self.model, {"consent": False, "resource_ids": ["transport", "meal"]})
 
+    def test_plan_contains_only_selected_catalog_conversations(self):
+        payload = {"consent": True, "resource_ids": ["meal", "transport"]}
+        result = plan(self.model, payload)
+        self.assertEqual([r["id"] for r in result["resources"]], payload["resource_ids"])
+        self.assertIn("Nothing was sent", result["message"])
+        self.assertEqual(len(result["verification"]), 4)
+        self.assertNotIn("description", result["resources"][0])
+        for extra in ({"text": "bus fares"}, {"notes": "not allowed"}, {"consent": False}):
+            with self.assertRaises(RequestError):
+                plan(self.model, {**payload, **extra})
+
 
 class HTTPTests(unittest.TestCase):
     @classmethod
@@ -361,6 +372,14 @@ class HTTPTests(unittest.TestCase):
         status, _, body = self.request("/api/compare", payload)
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body), compare(self.model, payload))
+
+    def test_http_plan_is_stateless_and_consent_gated(self):
+        payload = {"consent": True, "resource_ids": ["meal"]}
+        status, headers, body = self.request("/api/plan", payload)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body), plan(self.model, payload))
+        self.assertEqual(headers["Cache-Control"], "no-store")
+        self.assertEqual(self.request("/api/plan", {**payload, "consent": False})[0], 403)
 
     def test_http_no_match_and_input_errors(self):
         for raw in ('{"consent":false,"consent":true,"text":"bus fares"}',
@@ -437,6 +456,15 @@ class CLITests(unittest.TestCase):
         invalid = self.run_cli("browse", "--consent", "--offset", "-1")
         self.assertEqual(invalid.returncode, 2)
         self.assertEqual(invalid.stdout, "")
+
+    def test_cli_selected_plan_and_comparison(self):
+        for command in ("compare", "plan"):
+            denied = self.run_cli(command, "meal", "transport")
+            self.assertEqual(denied.returncode, 2)
+            allowed = self.run_cli(command, "--consent", "meal", "transport")
+            self.assertEqual(allowed.returncode, 0, allowed.stderr)
+            self.assertIn("resources", json.loads(allowed.stdout))
+        self.assertEqual(self.run_cli("plan", "--consent", "missing").returncode, 2)
 
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:

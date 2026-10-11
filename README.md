@@ -63,6 +63,12 @@ Use the returned `next_offset` with `--offset` for another page; no stdin is rea
 `resource_ids` from the catalog. It preserves selection order and shows shared
 formats and differing metadata, without scoring suitability or preferring a
 resource. Unknown IDs fail the whole request; no partial comparison is returned.
+`POST /api/plan` accepts one through three distinct catalog IDs and explicit consent,
+and returns catalog-only conversation prompts plus human verification questions.
+No barrier text or notes are accepted, and no plan is retained.
+CLI equivalents: `python -m guardian compare --consent meal transport` and
+`python -m guardian plan --consent meal transport`. Output is a synthetic preview,
+not a referral, contact form, application, reservation or eligibility judgment.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

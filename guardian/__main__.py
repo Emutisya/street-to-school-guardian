@@ -5,7 +5,7 @@ import sys
 
 from .model import Retriever, evaluate, load_catalog
 from .server import create_server
-from .service import RequestError, browse, match
+from .service import RequestError, browse, compare, match, plan
 
 
 def main():
@@ -26,6 +26,10 @@ def main():
     catalog_command.add_argument("--category")
     catalog_command.add_argument("--offset", type=int, default=0)
     catalog_command.add_argument("--limit", type=int, default=6)
+    for name in ("compare", "plan"):
+        selected = commands.add_parser(name, help=f"Create a fictional {name} from catalog IDs only")
+        selected.add_argument("--consent", action="store_true")
+        selected.add_argument("resource_ids", nargs="+")
     args = parser.parse_args()
     if args.command == "serve" and not 0 <= args.port <= 65535:
         parser.error("--port must be between 0 and 65535; use 0 to choose an available port.")
@@ -41,6 +45,11 @@ def main():
             print(json.dumps(browse(model, {
                 "consent": args.consent, "mode": args.mode, "category": args.category,
                 "offset": args.offset, "limit": args.limit
+            }), indent=2))
+        elif args.command in ("compare", "plan"):
+            operation = compare if args.command == "compare" else plan
+            print(json.dumps(operation(model, {
+                "consent": args.consent, "resource_ids": args.resource_ids
             }), indent=2))
         elif args.command == "recommend":
             if not args.consent:
