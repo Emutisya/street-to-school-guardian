@@ -37,7 +37,11 @@ def main():
             text = sys.stdin.read(801)
             print(json.dumps(match(model, {"text": text, "mode": args.mode, "consent": True}), indent=2))
         else:
-            server = create_server(model, args.port)
+            try:
+                server = create_server(model, args.port)
+            except OSError:
+                print(f"Could not start the local dashboard on port {args.port}. Choose another --port or use --port 0 for an available port.", file=sys.stderr)
+                return 2
             print(f"Open http://127.0.0.1:{server.server_port} — fictional services, no payload logging.", flush=True)
             try:
                 server.serve_forever()

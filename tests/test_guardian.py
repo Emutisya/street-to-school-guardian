@@ -5,6 +5,7 @@ import io
 import json
 from pathlib import Path
 import subprocess
+import socket
 import sys
 import threading
 import tempfile
@@ -305,6 +306,18 @@ class CLITests(unittest.TestCase):
         self.assertEqual(json.loads(allowed.stdout)["results"][0]["id"], "transport")
         for text in ["", "a@example.invalid"]:
             self.assertEqual(self.run_cli("recommend", "--consent", text=text).returncode, 2)
+
+    def test_occupied_dashboard_port_explains_recovery(self):
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            listener.listen()
+            port = listener.getsockname()[1]
+            result = self.run_cli("serve", "--port", str(port))
+        self.assertEqual(result.returncode, 2)
+        self.assertIn(f"port {port}", result.stderr)
+        self.assertIn("--port 0", result.stderr)
+        self.assertNotIn("Traceback", result.stderr)
+        self.assertEqual(result.stdout, "")
 
     def test_cli_evaluation_is_reproducible(self):
         run = self.run_cli("evaluate")
