@@ -128,6 +128,9 @@ def create_server(model, port=8765):
                 self.reply(408, {"error": "Request body timed out. Send a complete JSON request.", "code": "body_timeout"})
             except RequestError as exc:
                 self.reply(exc.status, {"error": str(exc), "code": exc.code})
+            except ValueError:
+                self.reply(503, {"error": "Local catalog model unavailable. Fit or reload it, check /ready, and retry.",
+                                 "code": "model_unavailable"})
 
         def setup(self):
             super().setup()

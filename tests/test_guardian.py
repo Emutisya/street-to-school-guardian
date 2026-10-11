@@ -573,6 +573,20 @@ class HTTPTests(unittest.TestCase):
             self.assertEqual(self.request("/health")[0], 200)
         self.assertEqual(self.request("/ready")[0], 200)
 
+    def test_unavailable_model_returns_recoverable_error_while_metadata_browsing_survives(self):
+        logs = io.StringIO()
+        payload = {"consent": True, "text": "bus fares"}
+        with redirect_stderr(logs), patch.object(self.model, "idf", {}):
+            status, _, body = self.request("/api/match", payload)
+            self.assertEqual(status, 503)
+            self.assertEqual(json.loads(body)["code"], "model_unavailable")
+            self.assertNotIn(payload["text"], body)
+            self.assertEqual(self.request("/api/match", {**payload, "consent": False})[0], 403)
+            self.assertEqual(self.request("/api/browse", {"consent": True})[0], 200)
+            self.assertEqual(self.request("/health")[0], 200)
+        self.assertEqual(logs.getvalue(), "")
+        self.assertEqual(self.request("/api/match", payload)[0], 200)
+
     def test_http_inference_matches_direct_inference_and_no_query_echo(self):
         payload = {"consent": True, "text": "Bus fares make the journey difficult.", "mode": "offline"}
         status, headers, body = self.request("/api/match", payload)

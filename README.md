@@ -223,6 +223,10 @@ alongside readable instructions. CLI runtime validation supports
 `python -m guardian --json-errors recommend --consent` for stderr JSON diagnostics;
 success output and default human-readable errors remain unchanged. Input content
 is never included. Argument-parser syntax errors retain normal argparse output.
+If local model inference becomes unavailable, API requests return HTTP 503 with
+`model_unavailable` and a fit/reload/readiness recovery path instead of disconnecting
+with a traceback. Consent remains authoritative before inference. Metadata-only
+browsing and server health can still work; this is not a denial of support.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
