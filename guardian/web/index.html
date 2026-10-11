@@ -256,6 +256,7 @@
       const results = $("results"), status = $("status");
       let epoch = 0, pending = null, busy = false, nextOffset = null;
       const choices = new Map();
+      const dialogTriggers = new Map();
       function node(tag, text, className) {
         const item = document.createElement(tag);
         if (text !== undefined) item.textContent = text;
@@ -265,6 +266,18 @@
       function message(text, error = false) {
         status.textContent = text; status.dataset.error = String(error);
       }
+      function openDialog(id, trigger) {
+        dialogTriggers.set(id, trigger);
+        const dialog = $(id), heading = dialog.querySelector("h2");
+        heading.tabIndex = -1; dialog.showModal(); heading.focus();
+      }
+      ["handoff", "comparison", "planning"].forEach(id => $(id).addEventListener("close", () => {
+        const trigger = dialogTriggers.get(id); dialogTriggers.delete(id);
+        queueMicrotask(() => {
+          if (trigger?.isConnected && !trigger.disabled && consent.checked) trigger.focus();
+          else if (!consent.checked) consent.focus();
+        });
+      }));
       function sync() {
         [barrier, mode, ...document.querySelectorAll("[data-preset]")].forEach(el => el.disabled = !consent.checked);
         $("category").disabled = !consent.checked || busy;
@@ -312,7 +325,7 @@
         if (!response.ok) throw new Error(data.error || "The local request could not be processed.");
         return data;
       }
-      async function handoff(id) {
+      async function handoff(id, trigger) {
         if (!consent.checked || busy) return;
         const generation = epoch; busy = true; sync();
         try {
@@ -321,7 +334,7 @@
           $("handoff-resource").textContent = data.title;
           $("handoff-message").textContent = data.message;
           $("checklist").replaceChildren(...data.checklist.map(text => node("li", text)));
-          $("handoff").showModal();
+          openDialog("handoff", trigger);
         } catch (error) {
           if (generation === epoch && error.name !== "AbortError") message(error.name === "TimeoutError" ? "The local handoff preview timed out. Check the Python server and try again." : error.message || "Local server unavailable.", true);
         } finally {
@@ -347,7 +360,7 @@
           } else explanation.append(node("p", "Catalog browsing only. Not ranked against your description."));
           const button = node("button", "Preview human handoff");
           button.setAttribute("aria-label", `Preview human handoff for ${item.title}`);
-          button.type = "button"; button.addEventListener("click", () => handoff(item.id));
+          button.type = "button"; button.addEventListener("click", () => handoff(item.id, button));
           card.append(head, node("h3", item.title), node("p", item.description, "description"), metadata, explanation, node("p", item.availability, "availability"), button);
           const select = node("button", choices.has(item.id) ? "Remove choice" : "Choose for comparison");
           select.type = "button"; select.dataset.choice = item.id;
@@ -399,7 +412,7 @@
             card.append(node("h3", item.title), node("p", item.description), detail);
             return card;
           }));
-          $("comparison").showModal();
+          openDialog("comparison", $("compare"));
         } catch (error) {
           if (generation === epoch && error.name !== "AbortError") message("Comparison could not load. Check the local server and try again.", true);
         } finally {
@@ -423,7 +436,7 @@
             li.append(check, label); return li;
           }));
           $("print-consent").checked = false;
-          $("planning").showModal();
+          openDialog("planning", $("prepare-plan"));
         } catch (error) {
           if (generation === epoch && error.name !== "AbortError") message("Plan preview could not load. Check the local server and try again.", true);
         } finally {

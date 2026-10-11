@@ -105,6 +105,10 @@ separate explicit checkbox explaining that the system print destination is outsi
 the page. Print styles exclude the barrier form and all other page content; direct
 printing without the explicit checklist action shows only a neutral instruction.
 No real recipient, appointment, contact or referral is created.
+Handoff, comparison and plan dialogs focus their summary heading when opened,
+support native keyboard focus containment and Escape dismissal, and return focus
+to the initiating control on close. Withdrawal instead returns focus to consent
+when the initiating control is removed or disabled.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

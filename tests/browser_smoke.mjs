@@ -93,7 +93,15 @@ try {
   await run("document.querySelector('.resource button').click()");
   await until(() => run("document.getElementById('handoff').open"), "handoff simulation");
   assert.ok((await run("document.getElementById('handoff-message').textContent")).includes("Nothing was sent"));
-  await run("document.getElementById('close-dialog').click(); document.getElementById('consent').click()");
+  assert.equal(await run("document.activeElement.id"), "handoff-title", "Modal summary receives initial focus");
+  await rpc("Input.dispatchKeyEvent", {type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9});
+  await rpc("Input.dispatchKeyEvent", {type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9});
+  assert.equal(await run("document.activeElement.id"), "close-dialog");
+  await rpc("Input.dispatchKeyEvent", {type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27});
+  await rpc("Input.dispatchKeyEvent", {type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27});
+  await until(() => run("!document.getElementById('handoff').open"), "keyboard modal dismissal");
+  assert.equal(await run("document.activeElement.getAttribute('aria-label')?.startsWith('Preview human handoff')"), true);
+  await run("document.getElementById('consent').click()");
   assert.equal(await run("document.getElementById('barrier').value === '' && !document.querySelector('.resource') && !document.getElementById('handoff').open"), true);
   await run("document.getElementById('consent').click(); document.getElementById('barrier').value = 'quantum entanglement'; document.getElementById('barrier').dispatchEvent(new Event('input')); document.getElementById('find').click()");
   await until(() => run("document.getElementById('result-count').textContent === '0 demo ideas'"), "no-match state");
@@ -113,6 +121,7 @@ try {
   assert.equal(await run("document.getElementById('comparison-cards').children.length"), 2);
   assert.ok((await run("document.getElementById('comparison-message').textContent")).includes("No option is preferred"));
   await run("document.getElementById('close-comparison').click()");
+  await until(() => run("document.activeElement.id === 'compare'"), "comparison focus restored");
   await run("document.getElementById('prepare-plan').click()");
   await until(() => run("document.getElementById('planning').open"), "fictional planning checklist");
   assert.equal(await run("document.getElementById('print-plan').disabled"), true);
@@ -124,6 +133,7 @@ try {
   assert.equal(await run("getComputedStyle(document.getElementById('planning')).display"), "none", "Direct printing has no authorized plan");
   await rpc("Emulation.setEmulatedMedia", {media: ""});
   await run("document.getElementById('close-plan').click()");
+  await until(() => run("document.activeElement.id === 'prepare-plan'"), "plan focus restored");
   assert.equal(await run("document.getElementById('print-consent').checked"), false);
   await run("document.getElementById('next-page').click()");
   await until(() => run("document.getElementById('result-count').textContent === '7–12 of 12 catalog ideas'"), "catalog pagination");
