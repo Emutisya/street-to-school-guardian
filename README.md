@@ -205,6 +205,10 @@ Catalog pages now support explicit previous-page navigation without re-entering
 filters. `previous_offset` is bounded at zero, the first page has no predecessor,
 and filter changes/withdrawal clear page-navigation state. Going back restores
 the same stable catalog slice; temporary choices remain until explicitly cleared.
+Catalog browsing can sort by stable ID, title or category using a fixed enum:
+API `sort`, CLI `browse --sort title`, or the dashboard display-order selector.
+Case-folded alphabetic ties use resource ID for reproducible paging. Sorting
+never adds a score, changes eligibility or processes the barrier description.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

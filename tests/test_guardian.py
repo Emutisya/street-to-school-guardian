@@ -477,6 +477,16 @@ class ConsentTests(unittest.TestCase):
         partial = browse(self.model, {"consent": True, "offset": 2, "limit": 5})
         self.assertEqual(partial["previous_offset"], 0)
 
+    def test_catalog_display_sort_is_stable_bounded_and_not_scored(self):
+        for key in ("title", "category"):
+            result = browse(self.model, {"consent": True, "sort": key, "limit": 12})
+            expected = sorted(self.model.catalog, key=lambda row: (row[key].casefold(), row["id"]))
+            self.assertEqual(result["results"], expected)
+            self.assertTrue(all("score" not in row for row in result["results"]))
+        for sort in ("score", None, [], "title;notes"):
+            with self.assertRaises(RequestError):
+                browse(self.model, {"consent": True, "sort": sort})
+
     def test_comparison_is_bounded_unranked_and_uses_only_metadata(self):
         result = compare(self.model, {"consent": True, "resource_ids": ["transport", "meal"]})
         self.assertEqual([r["id"] for r in result["resources"]], ["transport", "meal"])

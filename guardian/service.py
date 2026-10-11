@@ -22,7 +22,7 @@ def consent_fields(payload, allowed):
 
 def browse(model, payload):
     """Browse fictional metadata, never a person or a free-text search."""
-    consent_fields(payload, {"mode", "category", "offset", "limit"})
+    consent_fields(payload, {"mode", "category", "offset", "limit", "sort"})
     mode = payload.get("mode", "any")
     if not isinstance(mode, str) or mode not in {"any", "offline", "online"}:
         raise RequestError("Mode must be any, offline or online.")
@@ -35,13 +35,18 @@ def browse(model, payload):
         raise RequestError("Offset must be a catalog position.")
     if type(limit) is not int or not 1 <= limit <= 12:
         raise RequestError("Limit must be an integer from 1 through 12.")
+    sort = payload.get("sort", "id")
+    if not isinstance(sort, str) or sort not in {"id", "title", "category"}:
+        raise RequestError("Sort must be id, title or category; no relevance ranking is implied.")
     rows = sorted((row for row in model.catalog
                    if (mode == "any" or mode in row["modes"])
-                   and (category is None or row["category"] == category)), key=lambda row: row["id"])
+                   and (category is None or row["category"] == category)),
+                  key=lambda row: (row[sort].casefold(), row["id"]))
     end = offset + limit
     return {
         "status": "catalog_only", "results": deepcopy(rows[offset:end]),
         "total": len(rows), "offset": offset,
+        "sort": sort,
         "next_offset": end if end < len(rows) else None,
         "previous_offset": max(0, offset - limit) if offset else None,
         "categories": categories,

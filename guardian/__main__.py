@@ -37,6 +37,7 @@ def main():
     catalog_command.add_argument("--category")
     catalog_command.add_argument("--offset", type=int, default=0)
     catalog_command.add_argument("--limit", type=int, default=6)
+    catalog_command.add_argument("--sort", choices=["id", "title", "category"], default="id")
     for name in ("compare", "plan"):
         selected = commands.add_parser(name, help=f"Create a fictional {name} from catalog IDs only")
         selected.add_argument("--consent", action="store_true")
@@ -71,7 +72,7 @@ def main():
         elif args.command == "browse":
             print(json.dumps(browse(model, {
                 "consent": args.consent, "mode": args.mode, "category": args.category,
-                "offset": args.offset, "limit": args.limit
+                "offset": args.offset, "limit": args.limit, "sort": args.sort
             }), indent=2))
         elif args.command in ("compare", "plan"):
             operation = compare if args.command == "compare" else plan

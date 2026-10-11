@@ -213,9 +213,11 @@
         <h3>Browse without a description</h3>
         <label class="field-label" for="category">Fictional catalog category</label>
         <select id="category" disabled><option value="">All categories</option></select>
+        <label class="field-label" for="catalog-sort">Catalog display order</label>
+        <select id="catalog-sort" disabled><option value="id">Stable catalog ID</option><option value="title">Title alphabetically</option><option value="category">Category alphabetically</option></select>
         <div class="actions"><button id="browse" type="button" disabled>Browse fictional catalog</button></div>
         <div class="actions"><button id="previous-page" type="button" disabled>Previous catalog page</button><button id="next-page" type="button" disabled>Next catalog page</button></div>
-        <p class="field-help">Uses only category and format choices, never the description above. Catalog order is by ID, not suitability.</p>
+        <p class="field-help">Uses only catalog choices, never the description above. Alphabetic display order is not suitability or a relevance ranking.</p>
         <p class="field-help" id="catalog-coverage"></p>
         <p class="field-help">Reset or untick consent to clear this page and cancel pending requests. No browser storage or server payload logs are used.</p>
       </form>
@@ -300,6 +302,7 @@
       function sync() {
         [barrier, mode, $("result-limit"), ...document.querySelectorAll("[data-preset]")].forEach(el => el.disabled = !consent.checked);
         $("category").disabled = !consent.checked || busy;
+        $("catalog-sort").disabled = !consent.checked || busy;
         $("browse").disabled = !consent.checked || busy;
         $("next-page").disabled = !consent.checked || busy || nextOffset === null;
         $("previous-page").disabled = !consent.checked || busy || previousOffset === null;
@@ -346,7 +349,7 @@
         nextOffset = null; previousOffset = null;
         $("catalog-coverage").textContent = "";
         fieldError();
-        if (clearInput) { barrier.value = ""; mode.value = "any"; $("result-limit").value = "3"; $("category").value = ""; choices.clear(); showChoices(); }
+        if (clearInput) { barrier.value = ""; mode.value = "any"; $("result-limit").value = "3"; $("category").value = ""; $("catalog-sort").value = "id"; choices.clear(); showChoices(); }
         $("comparison").close(); $("comparison-cards").replaceChildren();
         $("comparison-message").textContent = ""; $("shared-modes").textContent = "";
         $("planning").close(); $("plan-resources").replaceChildren(); $("plan-verification").replaceChildren();
@@ -534,7 +537,7 @@
         invalidate(); const generation = epoch; busy = true; sync();
         message("Browsing fictional metadata only; no description is processed…");
         try {
-          const payload = {consent: true, mode: mode.value, offset, limit: 6};
+          const payload = {consent: true, mode: mode.value, offset, limit: 6, sort: $("catalog-sort").value};
           if ($("category").value) payload.category = $("category").value;
           const data = await request("/api/browse", payload);
           if (generation !== epoch || !consent.checked) return;
@@ -585,6 +588,7 @@
       mode.addEventListener("change", () => invalidate());
       $("result-limit").addEventListener("change", () => invalidate());
       $("category").addEventListener("change", () => invalidate());
+      $("catalog-sort").addEventListener("change", () => invalidate());
       $("browse").addEventListener("click", () => browseCatalog());
       $("next-page").addEventListener("click", () => browseCatalog(nextOffset));
       $("previous-page").addEventListener("click", () => browseCatalog(previousOffset));
