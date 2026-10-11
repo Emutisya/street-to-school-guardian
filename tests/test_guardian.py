@@ -898,6 +898,17 @@ class CLITests(unittest.TestCase):
         self.assertIsNone(learning["known_fraction"])
         self.assertGreater(groups["challenge_queries"]["fully_unknown_queries"], 0)
 
+    def test_cardinality_slices_keep_empty_and_compound_label_denominators_honest(self):
+        result = self.run_cli("evaluate-cardinality")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        groups = json.loads(result.stdout)["groups"]
+        benchmark = evaluate(Retriever(load_catalog()).fit())
+        compound = [row for row in benchmark["cases"] if row["group"] == "queries" and len(row["relevant"]) > 1]
+        self.assertAlmostEqual(groups["queries"]["multiple_labels"]["mean_recall_at_3"],
+                               sum(row["recall_at_3"] for row in compound) / len(compound), places=6)
+        self.assertEqual(groups["challenge_queries"]["multiple_labels"]["queries"], 0)
+        self.assertIsNone(groups["challenge_queries"]["multiple_labels"]["coverage"])
+
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))

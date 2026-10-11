@@ -30,6 +30,9 @@ retrieval explanations. Arbitrary command-line descriptions are not accepted.
 `evaluate-vocabulary` reports per-case and per-group unique tokenizer-term
 coverage. Generic cases with zero usable terms get `null` fractions and are
 explicitly excluded from the mean denominator; this is not language detection.
+`evaluate-cardinality` compares single-label and compound-label benchmark slices
+separately for standard/challenge cases. Empty slices report `null` metrics.
+These are synthetic editorial annotation groups, never child/family profiles.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

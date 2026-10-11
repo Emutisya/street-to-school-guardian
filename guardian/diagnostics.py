@@ -39,3 +39,24 @@ def vocabulary_report(model):
                         if usable_cases else None}
     return {"catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
             "groups": groups, "note": "Synthetic tokenizer coverage, not language identification, accuracy or personal-data coverage. Zero-usable cases are excluded from the fraction denominator."}
+
+
+def labeled_metrics(rows):
+    return {"queries": len(rows),
+            "coverage": round(sum(not row["abstained"] for row in rows) / len(rows), 6) if rows else None,
+            "top1_hit_rate": round(sum(row["top1_hit"] for row in rows) / len(rows), 6) if rows else None,
+            "mean_recall_at_3": round(sum(row["recall_at_3"] for row in rows) / len(rows), 6) if rows else None,
+            "case_ids": [row["case_id"] for row in rows]}
+
+
+def cardinality_report(model):
+    benchmark = evaluate(model)
+    groups = {}
+    for group in ("queries", "challenge_queries"):
+        rows = [row for row in benchmark["cases"] if row["group"] == group]
+        groups[group] = {
+            "single_label": labeled_metrics([row for row in rows if len(row["relevant"]) == 1]),
+            "multiple_labels": labeled_metrics([row for row in rows if len(row["relevant"]) > 1])
+        }
+    return {"catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
+            "groups": groups, "note": "Slices are synthetic annotation cardinality, not child or family profiles. Empty slices have null metrics; standard and challenge cases remain separate."}
