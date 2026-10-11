@@ -11,6 +11,7 @@ from .service import RequestError, browse, compare, match, plan, related
 
 def main():
     parser = argparse.ArgumentParser(description="Street to School Guardian: fictional, consent-first support retrieval")
+    parser.add_argument("--json-errors", action="store_true", help="Emit machine-readable runtime validation errors to stderr")
     commands = parser.add_subparsers(dest="command", required=True)
     train = commands.add_parser("train", help="Fit catalog TF-IDF and save non-personal weights")
     train.add_argument("--output", default=str(Path("models") / "tfidf.json"))
@@ -84,14 +85,15 @@ def main():
                                             "mode": args.mode, "limit": args.limit}), indent=2))
         elif args.command == "recommend":
             if not args.consent:
-                raise RequestError("Use --consent only after agreeing to process an anonymous description.", 403)
+                raise RequestError("Use --consent only after agreeing to process an anonymous description.", 403, "consent_required")
             text = sys.stdin.read(801)
             print(json.dumps(match(model, {"text": text, "mode": args.mode, "limit": args.limit, "consent": True}), indent=2))
         else:
             try:
                 server = create_server(model, args.port)
             except OSError:
-                print(f"Could not start the local dashboard on port {args.port}. Choose another --port or use --port 0 for an available port.", file=sys.stderr)
+                message = f"Could not start the local dashboard on port {args.port}. Choose another --port or use --port 0 for an available port."
+                print(json.dumps({"error": message, "code": "port_unavailable"}) if args.json_errors else message, file=sys.stderr)
                 return 2
             print(f"Open http://127.0.0.1:{server.server_port} — fictional services, no payload logging.", flush=True)
             try:
@@ -102,7 +104,11 @@ def main():
                 server.server_close()
     except (RequestError, ValueError, OSError) as exc:
         # Never echo user input or an exception representation containing a payload.
-        print(str(exc) if isinstance(exc, RequestError) else "Could not load model, data, or start server. Check paths and port.", file=sys.stderr)
+        message = str(exc) if isinstance(exc, RequestError) else "Could not load model, data, or start server. Check paths and port."
+        if args.json_errors:
+            print(json.dumps({"error": message, "code": exc.code if isinstance(exc, RequestError) else "local_data_failure"}), file=sys.stderr)
+        else:
+            print(message, file=sys.stderr)
         return 2
     return 0
 

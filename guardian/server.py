@@ -89,9 +89,9 @@ def create_server(model, port=8765):
                                          "resources": summary["documents"], "vocabulary": summary["vocabulary_size"],
                                          "note": "Local retrieval readiness only; no real services or referrals."})
                 else:
-                    self.reply(404, {"error": "Route not found."})
+                    self.reply(404, {"error": "Route not found.", "code": "route_not_found"})
             except RequestError as exc:
-                self.reply(exc.status, {"error": str(exc)})
+                self.reply(exc.status, {"error": str(exc), "code": exc.code})
 
         def do_POST(self):
             try:
@@ -100,7 +100,7 @@ def create_server(model, port=8765):
                               "/api/browse": browse, "/api/compare": compare, "/api/plan": plan,
                               "/api/related": related}
                 if self.path not in operations:
-                    raise RequestError("Route not found.", 404)
+                    raise RequestError("Route not found.", 404, "route_not_found")
                 if len(self.headers.get_all("Content-Type", [])) != 1 or self.headers.get_content_type() != "application/json":
                     raise RequestError("Use Content-Type: application/json.", 415)
                 if self.headers.get("Transfer-Encoding") is not None:
@@ -121,13 +121,13 @@ def create_server(model, port=8765):
                 try:
                     payload = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_fields)
                 except (ValueError, UnicodeDecodeError, RecursionError):
-                    raise RequestError("Send valid UTF-8 JSON.") from None
+                    raise RequestError("Send valid UTF-8 JSON.", code="invalid_json") from None
                 result = operations[self.path](model, payload)
                 self.reply(200, result)
             except TimeoutError:
-                self.reply(408, {"error": "Request body timed out. Send a complete JSON request."})
+                self.reply(408, {"error": "Request body timed out. Send a complete JSON request.", "code": "body_timeout"})
             except RequestError as exc:
-                self.reply(exc.status, {"error": str(exc)})
+                self.reply(exc.status, {"error": str(exc), "code": exc.code})
 
         def setup(self):
             super().setup()

@@ -6,18 +6,19 @@ import unicodedata
 
 
 class RequestError(ValueError):
-    def __init__(self, message, status=400):
+    def __init__(self, message, status=400, code="invalid_request"):
         super().__init__(message)
         self.status = status
+        self.code = code
 
 
 def consent_fields(payload, allowed):
     if not isinstance(payload, dict):
-        raise RequestError("Send a JSON object.")
+        raise RequestError("Send a JSON object.", code="invalid_payload")
     if payload.get("consent") is not True:
-        raise RequestError("Consent is required before processing or simulating a handoff.", 403)
+        raise RequestError("Consent is required before processing or simulating a handoff.", 403, "consent_required")
     if set(payload) - allowed - {"consent"}:
-        raise RequestError("Unexpected fields. Do not send personal details.")
+        raise RequestError("Unexpected fields. Do not send personal details.", code="unexpected_fields")
 
 
 def browse(model, payload):
@@ -120,12 +121,12 @@ def related(model, payload):
 
 def validate(payload, action="match"):
     if not isinstance(payload, dict):
-        raise RequestError("Send a JSON object.")
+        raise RequestError("Send a JSON object.", code="invalid_payload")
     if payload.get("consent") is not True:
-        raise RequestError("Consent is required before processing or simulating a handoff.", 403)
+        raise RequestError("Consent is required before processing or simulating a handoff.", 403, "consent_required")
     allowed = {"consent", "resource_id"} if action == "handoff" else {"consent", "text", "mode", "limit"}
     if set(payload) - allowed:
-        raise RequestError("Unexpected fields. Do not send personal details.")
+        raise RequestError("Unexpected fields. Do not send personal details.", code="unexpected_fields")
     if action == "handoff":
         rid = payload.get("resource_id")
         if not isinstance(rid, str) or not rid or len(rid) > 80:
@@ -133,14 +134,14 @@ def validate(payload, action="match"):
         return rid
     text = payload.get("text")
     if not isinstance(text, str) or not text.strip():
-        raise RequestError("Describe a barrier without identifying anyone.")
+        raise RequestError("Describe a barrier without identifying anyone.", code="invalid_text")
     if len(text) > 800:
-        raise RequestError("Use at most 800 characters and no identifying details.")
+        raise RequestError("Use at most 800 characters and no identifying details.", code="text_too_long")
     if any(unicodedata.category(char) in {"Cc", "Cf", "Cs"} and char not in "\n\r\t" for char in text):
-        raise RequestError("Remove hidden, directional or control characters from the description.")
+        raise RequestError("Remove hidden, directional or control characters from the description.", code="hidden_controls")
     # A conservative backstop, not anonymization: names cannot reliably be detected.
     if re.search(r"[@\d]|https?://|www\.", text, re.IGNORECASE):
-        raise RequestError("Remove numbers, dates, coordinates, links and contact details. Use general words only.")
+        raise RequestError("Remove numbers, dates, coordinates, links and contact details. Use general words only.", code="identifying_markers")
     mode = payload.get("mode", "any")
     if not isinstance(mode, str) or mode not in {"any", "offline", "online"}:
         raise RequestError("Mode must be any, offline or online.")

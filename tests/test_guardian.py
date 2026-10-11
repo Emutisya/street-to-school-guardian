@@ -592,6 +592,18 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body)["status"], "simulation_only")
 
+    def test_http_error_codes_distinguish_consent_input_and_json_failures_without_echo(self):
+        for payload, code in (
+            ({"consent": False, "text": "bus fares"}, "consent_required"),
+            ({"consent": True, "text": "contact@example.invalid"}, "identifying_markers"),
+            ({"consent": True, "text": "bus fares", "private_notes": "not allowed"}, "unexpected_fields"),
+        ):
+            _, _, body = self.request("/api/match", payload)
+            error = json.loads(body)
+            self.assertEqual(error["code"], code)
+            self.assertNotIn(payload["text"], body)
+        self.assertEqual(json.loads(self.request("/api/match", raw="{bad")[2])["code"], "invalid_json")
+
     def test_http_catalog_browsing_requires_consent(self):
         self.assertEqual(self.request("/api/browse", {"consent": False})[0], 403)
         status, headers, body = self.request("/api/browse", {"consent": True, "mode": "online", "limit": 2})
@@ -717,6 +729,15 @@ class CLITests(unittest.TestCase):
         self.assertEqual(len(json.loads(result.stdout)["results"]), 1)
         self.assertEqual(self.run_cli("recommend", "--consent", "--limit", "7", text="bus fares").returncode, 2)
 
+    def test_cli_json_runtime_errors_are_actionable_without_input_echo(self):
+        denied = self.run_cli("--json-errors", "recommend", text="bus fares")
+        self.assertEqual(denied.returncode, 2)
+        self.assertEqual(json.loads(denied.stderr)["code"], "consent_required")
+        rejected = self.run_cli("--json-errors", "recommend", "--consent", text="contact@example.invalid")
+        self.assertEqual(json.loads(rejected.stderr)["code"], "identifying_markers")
+        self.assertEqual(rejected.stdout, "")
+        self.assertNotIn("contact@example.invalid", rejected.stderr)
+
     def test_cli_browse_accepts_only_catalog_filters(self):
         self.assertEqual(self.run_cli("browse").returncode, 2)
         result = self.run_cli("browse", "--consent", "--category", "Food", "--limit", "2")
@@ -747,11 +768,13 @@ class CLITests(unittest.TestCase):
             listener.listen()
             port = listener.getsockname()[1]
             result = self.run_cli("serve", "--port", str(port))
+            structured = self.run_cli("--json-errors", "serve", "--port", str(port))
         self.assertEqual(result.returncode, 2)
         self.assertIn(f"port {port}", result.stderr)
         self.assertIn("--port 0", result.stderr)
         self.assertNotIn("Traceback", result.stderr)
         self.assertEqual(result.stdout, "")
+        self.assertEqual(json.loads(structured.stderr)["code"], "port_unavailable")
 
     def test_cli_evaluation_is_reproducible(self):
         run = self.run_cli("evaluate")

@@ -217,6 +217,12 @@ The loopback server rejects ambiguous duplicate Host, Origin, fetch-site and
 Content-Type headers instead of choosing whichever value a parser happens to
 return. Absolute/proxy-style targets, network-path targets and fragments are
 rejected as ordinary validation errors; only exact local routes are supported.
+HTTP validation failures include stable `code` fields such as `consent_required`,
+`identifying_markers`, `unexpected_fields`, `invalid_json` and `body_timeout`,
+alongside readable instructions. CLI runtime validation supports
+`python -m guardian --json-errors recommend --consent` for stderr JSON diagnostics;
+success output and default human-readable errors remain unchanged. Input content
+is never included. Argument-parser syntax errors retain normal argparse output.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
