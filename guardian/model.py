@@ -1,6 +1,7 @@
 """A small, fitted TF-IDF cosine retriever using Python's standard library."""
 
 from collections import Counter
+from copy import deepcopy
 import hashlib
 import json
 import math
@@ -35,7 +36,24 @@ class Retriever:
     """Fit only catalog descriptions; query labels never enter training."""
 
     def __init__(self, catalog):
-        self.catalog = catalog
+        if not isinstance(catalog, list) or not catalog:
+            raise ValueError("Provide a nonempty resource catalog.")
+        seen = set()
+        for row in catalog:
+            if not isinstance(row, dict):
+                raise ValueError("Each catalog resource must be an object.")
+            for field in ("id", "title", "category", "description", "language", "cost", "availability", "handoff"):
+                if not isinstance(row.get(field), str) or not row[field].strip():
+                    raise ValueError(f"Catalog resource {field} must be nonempty text.")
+            if row["id"] in seen:
+                raise ValueError("Catalog resource IDs must be unique.")
+            seen.add(row["id"])
+            modes = row.get("modes")
+            if (not isinstance(modes, list) or not modes
+                    or any(mode not in ("offline", "online") for mode in modes)
+                    or len(modes) != len(set(modes))):
+                raise ValueError("Resource modes must be unique offline or online values.")
+        self.catalog = deepcopy(catalog)
         self.idf = {}
         self.vectors = {}
 
@@ -56,6 +74,14 @@ class Retriever:
         return {word: value / norm for word, value in weighted.items()} if norm else {}
 
     def rank(self, text, mode="any", limit=3):
+        if not isinstance(text, str):
+            raise ValueError("Retrieval text must be a string.")
+        if mode not in ("any", "offline", "online"):
+            raise ValueError("Mode must be any, offline or online.")
+        if type(limit) is not int or limit < 1:
+            raise ValueError("Retrieval limit must be a positive integer.")
+        if not self.idf or set(self.vectors) != {row["id"] for row in self.catalog}:
+            raise ValueError("Fit or load the model before retrieval.")
         query = self.vectorize(tokens(text))
         results = []
         for resource in self.catalog:

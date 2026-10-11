@@ -42,6 +42,27 @@ class ModelTests(unittest.TestCase):
             self.assertIn(word, tokens(item["description"]))
         self.assertIn("not a probability", item["explanation"])
 
+    def test_catalog_validation_and_snapshot_prevent_stale_vectors(self):
+        for catalog in ([], None, [None], [self.catalog[0], self.catalog[0]]):
+            with self.subTest(catalog=catalog), self.assertRaises(ValueError):
+                Retriever(catalog)
+        for field, value in (("description", ""), ("modes", []), ("modes", ["other"])):
+            catalog = copy.deepcopy(self.catalog)
+            catalog[0][field] = value
+            with self.assertRaises(ValueError):
+                Retriever(catalog)
+        before = self.model.rank("bus fares")
+        self.catalog[1]["description"] = "Changed after fitting"
+        self.assertEqual(self.model.rank("bus fares"), before)
+
+    def test_invalid_retrieval_options_and_unfitted_model_are_rejected(self):
+        for text, mode, limit in ((None, "any", 3), ("bus", [], 3),
+                                  ("bus", "any", True), ("bus", "any", 0)):
+            with self.assertRaises(ValueError):
+                self.model.rank(text, mode, limit)
+        with self.assertRaisesRegex(ValueError, "Fit or load"):
+            Retriever(self.catalog).rank("bus fares")
+
     def test_format_filter_is_not_eligibility(self):
         result = match(self.model, {"consent": True, "text": "Printed worksheets and paper exercises.", "mode": "online"})
         self.assertEqual(result["status"], "no_match")
