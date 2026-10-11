@@ -43,6 +43,9 @@ def browse(model, payload):
                    if (mode == "any" or mode in row["modes"])
                    and (category is None or row["category"] == category)),
                   key=lambda row: (row[sort].casefold(), row["id"]))
+    if offset > len(rows):
+        raise RequestError("Offset exceeds the filtered catalog. Restart at offset zero after changing filters.",
+                           code="offset_out_of_range")
     end = offset + limit
     return {
         "status": "catalog_only", "results": deepcopy(rows[offset:end]),

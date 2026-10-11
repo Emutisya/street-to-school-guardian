@@ -13,6 +13,9 @@ the recovery is deterministic retraining, not a claim of cryptographic authentic
 Inspect one catalog entry with `python -m guardian resource --consent meal` or
 `POST /api/resource`. This ID-only, copied metadata view accepts no description
 or notes, contains no relevance score, and does not create a real referral.
+Stale page offsets beyond a newly filtered catalog fail with `offset_out_of_range`
+and an offset-zero recovery instruction, rather than displaying impossible page
+positions. An empty filtered catalog still has a valid empty page at offset zero.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

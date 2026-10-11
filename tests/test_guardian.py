@@ -518,6 +518,15 @@ class ConsentTests(unittest.TestCase):
         partial = browse(self.model, {"consent": True, "offset": 2, "limit": 5})
         self.assertEqual(partial["previous_offset"], 0)
 
+    def test_stale_catalog_offset_does_not_report_positions_beyond_filtered_total(self):
+        with self.assertRaises(RequestError) as caught:
+            browse(self.model, {"consent": True, "category": "Food", "offset": 6})
+        self.assertEqual(caught.exception.code, "offset_out_of_range")
+        self.assertIn("offset zero", str(caught.exception))
+        empty = browse(self.model, {"consent": True, "category": "Food", "mode": "online", "offset": 0})
+        self.assertEqual(empty["total"], 0)
+        self.assertEqual(empty["results"], [])
+
     def test_catalog_display_sort_is_stable_bounded_and_not_scored(self):
         for key in ("title", "category"):
             result = browse(self.model, {"consent": True, "sort": key, "limit": 12})
