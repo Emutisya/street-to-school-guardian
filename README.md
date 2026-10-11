@@ -231,6 +231,12 @@ The dashboard has a description-free readiness check with a last-check catalog
 fingerprint and a concrete local-server recovery message. It is usable before
 consent because it requests only static model metadata, not a barrier. No polling,
 telemetry or storage is added; reset clears its displayed state.
+`POST /api/explain` and `python -m guardian explain --consent --mode online --limit 1`
+explain why each fictional candidate was included, excluded by format, below the
+fixed threshold or beyond the chosen review limit. CLI input is anonymous stdin.
+The trace is bounded to twelve candidates, returns no original text/unknown terms,
+and uses full precision for decisions even when displayed scores round to the
+threshold. It is retrieval debugging, never an eligibility rationale.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

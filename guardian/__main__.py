@@ -6,7 +6,7 @@ import sys
 from .model import Retriever, audit_catalog, evaluate, evaluate_baselines, evaluate_formats, load_catalog
 from .reporting import compare_evaluation, save_evaluation
 from .server import create_server
-from .service import RequestError, browse, compare, match, plan, related
+from .service import RequestError, browse, compare, explain, match, plan, related
 
 
 def main():
@@ -32,6 +32,10 @@ def main():
     recommend.add_argument("--consent", action="store_true")
     recommend.add_argument("--mode", choices=["any", "offline", "online"], default="any")
     recommend.add_argument("--limit", type=int, default=3, help="Return one through six fictional ideas")
+    trace = commands.add_parser("explain", help="Explain bounded catalog exclusions using an anonymous example from stdin")
+    trace.add_argument("--consent", action="store_true")
+    trace.add_argument("--mode", choices=["any", "offline", "online"], default="any")
+    trace.add_argument("--limit", type=int, default=3)
     catalog_command = commands.add_parser("browse", help="Browse fictional metadata without a barrier description")
     catalog_command.add_argument("--consent", action="store_true")
     catalog_command.add_argument("--mode", choices=["any", "offline", "online"], default="any")
@@ -83,11 +87,12 @@ def main():
         elif args.command == "related":
             print(json.dumps(related(model, {"consent": args.consent, "resource_id": args.resource_id,
                                             "mode": args.mode, "limit": args.limit}), indent=2))
-        elif args.command == "recommend":
+        elif args.command in ("recommend", "explain"):
             if not args.consent:
                 raise RequestError("Use --consent only after agreeing to process an anonymous description.", 403, "consent_required")
             text = sys.stdin.read(801)
-            print(json.dumps(match(model, {"text": text, "mode": args.mode, "limit": args.limit, "consent": True}), indent=2))
+            operation = match if args.command == "recommend" else explain
+            print(json.dumps(operation(model, {"text": text, "mode": args.mode, "limit": args.limit, "consent": True}), indent=2))
         else:
             try:
                 server = create_server(model, args.port)

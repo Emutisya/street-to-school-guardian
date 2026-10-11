@@ -122,6 +122,39 @@ class Retriever:
         results.sort(key=lambda item: (-item[0], item[1]["id"]))
         return [item for _, item in results[:limit]]
 
+    def trace(self, text, mode="any", limit=3):
+        self.rank(text, mode, limit)
+        query = self.vectorize(tokens(text))
+        scored = []
+        for row in self.catalog:
+            vector = self.vectors[row["id"]]
+            shared = {term: weight * vector[term] for term, weight in query.items() if term in vector}
+            score = sum(shared.values())
+            scored.append((score, row, len(shared)))
+        scored.sort(key=lambda item: (-item[0], item[1]["id"]))
+        admitted = 0
+        candidates = []
+        for score, row, shared in scored:
+            format_allowed = mode == "any" or mode in row["modes"]
+            above_threshold = score >= MIN_SCORE
+            if not format_allowed:
+                reason = "format_excluded"
+            elif not above_threshold:
+                reason = "below_threshold"
+            else:
+                admitted += 1
+                reason = "within_review_limit" if admitted <= limit else "beyond_review_limit"
+            candidates.append({
+                "id": row["id"], "title": row["title"], "score": round(score, 6),
+                "shared_term_count": shared, "format_allowed": format_allowed,
+                "above_threshold": above_threshold, "reason": reason
+            })
+        return {
+            "threshold": MIN_SCORE, "review_limit": limit, "candidates": candidates[:12],
+            "candidate_count": len(candidates), "omitted_candidates": max(0, len(candidates) - 12),
+            "note": "Full-precision cosine/format/list-size diagnostics, not judgments about people. Rounded scores do not determine inclusion. No input text or unknown terms are returned."
+        }
+
     def save(self, path):
         if not self.idf or set(self.vectors) != {row["id"] for row in self.catalog}:
             raise ValueError("Fit or load the model before saving an artifact.")

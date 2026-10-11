@@ -15,7 +15,7 @@ from unittest.mock import patch
 from guardian.model import DATA_DIR, Retriever, audit_catalog, evaluate, evaluate_baselines, evaluate_formats, load_catalog, tokens
 from guardian.server import create_server
 from guardian.reporting import compare_evaluation, save_evaluation
-from guardian.service import RequestError, browse, compare, handoff, match, plan, related
+from guardian.service import RequestError, browse, compare, explain, handoff, match, plan, related
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -56,6 +56,18 @@ class ModelTests(unittest.TestCase):
             self.assertIn(part["term"], tokens(result["description"]))
         self.assertEqual(result["term_contributions"],
                          sorted(result["term_contributions"], key=lambda part: (-part["contribution"], part["term"])))
+
+    def test_candidate_trace_distinguishes_format_threshold_and_review_limit_with_full_precision(self):
+        trace = self.model.trace("bus fares internet data notebooks audio reading", "online", 1)
+        included = [row["id"] for row in trace["candidates"] if row["reason"] == "within_review_limit"]
+        self.assertEqual(included, [row["id"] for row in self.model.rank("bus fares internet data notebooks audio reading", "online", 1)])
+        self.assertTrue(any(row["reason"] == "format_excluded" for row in trace["candidates"]))
+        self.assertTrue(any(row["reason"] == "beyond_review_limit" for row in trace["candidates"]))
+        self.model.vectors["transport"] = {"bus": .1199999999}
+        with patch.object(self.model, "vectorize", return_value={"bus": 1}):
+            rounded = next(row for row in self.model.trace("bus")["candidates"] if row["id"] == "transport")
+        self.assertEqual(rounded["score"], .12)
+        self.assertFalse(rounded["above_threshold"])
 
     def test_display_rounding_does_not_change_retrieval_order(self):
         resources = copy.deepcopy(self.catalog[:2])
@@ -644,6 +656,14 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(json.loads(self.request("/api/related", payload)[2]), related(self.model, payload))
         self.assertEqual(self.request("/api/related", {**payload, "consent": False})[0], 403)
 
+    def test_http_exclusion_explanation_requires_anonymous_consent(self):
+        payload = {"consent": True, "text": "Bus fares and buying notebooks"}
+        status, _, body = self.request("/api/explain", payload)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body), explain(self.model, payload))
+        self.assertNotIn(payload["text"], body)
+        self.assertEqual(self.request("/api/explain", {**payload, "consent": False})[0], 403)
+
     def test_http_no_match_and_input_errors(self):
         for raw in ('{"consent":false,"consent":true,"text":"bus fares"}',
                     json.dumps({"consent": True, "text": "bus fares"}).encode("utf-16")):
@@ -775,6 +795,13 @@ class CLITests(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(json.loads(run.stdout)["source_id"], "connectivity")
         self.assertNotIn("ignored stdin", run.stdout)
+
+    def test_cli_explain_is_consent_gated_and_emits_only_catalog_diagnostics(self):
+        self.assertEqual(self.run_cli("explain", text="bus fares").returncode, 2)
+        allowed = self.run_cli("explain", "--consent", "--mode", "online", "--limit", "1", text="Bus fares and buying notebooks")
+        self.assertEqual(allowed.returncode, 0, allowed.stderr)
+        self.assertEqual(len(json.loads(allowed.stdout)["candidates"]), 12)
+        self.assertNotIn("Bus fares and buying notebooks", allowed.stdout)
 
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:

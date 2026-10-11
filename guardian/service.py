@@ -163,6 +163,11 @@ def match(model, payload):
     }
 
 
+def explain(model, payload):
+    text, mode = validate(payload)
+    return model.trace(text, mode, payload.get("limit", 3))
+
+
 def handoff(model, payload):
     rid = validate(payload, action="handoff")
     resource = next((r for r in model.catalog if r["id"] == rid), None)
