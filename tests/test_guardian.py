@@ -250,6 +250,20 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(abstained["group_metrics"]["challenge"]["coverage"], 0)
         self.assertIsNone(abstained["group_metrics"]["challenge"]["answered_top1_hit_rate"])
 
+    def test_evaluation_diagnostics_separate_vocabulary_failures_and_negative_matches(self):
+        report = evaluate(self.model)
+        self.assertEqual(len({row["case_id"] for row in report["cases"]}), len(report["cases"]))
+        for group, counts in report["diagnostic_counts"].items():
+            self.assertEqual(sum(counts.values()), sum(row["group"] == group for row in report["cases"]))
+        self.assertGreater(report["diagnostic_counts"]["challenge_queries"]["outside_vocabulary"], 0)
+        self.assertEqual(report["unexpected_match_cases"], [])
+        original = self.model.rank
+        def contaminate(text, mode="any", limit=3):
+            return original("bus fares", mode, limit) if text == "Learning." else original(text, mode, limit)
+        with patch.object(self.model, "rank", side_effect=contaminate):
+            changed = evaluate(self.model)
+        self.assertEqual(changed["unexpected_match_cases"], ["unmatched_queries:6"])
+
     def test_token_equivalent_queries_cannot_inflate_evaluation(self):
         data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
         duplicate = copy.deepcopy(data["queries"][0])

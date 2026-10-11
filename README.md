@@ -133,6 +133,11 @@ explanation still highlights at most five terms, but the trace accounts for all
 shared terms in the cosine score, rounded only for display. These are catalog
 similarity contributions, not causal factors, probabilities or personal traits;
 unknown input words are never listed.
+Evaluation cases have stable group-position IDs and catalog/tokenizer diagnostics.
+Per-group reason counts distinguish vocabulary abstentions from threshold or
+format limitations, while `unexpected_match_cases` identifies synthetic negative
+queries that received options. Position IDs are meaningful only with the reported
+benchmark hash; they are not identifiers for people.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

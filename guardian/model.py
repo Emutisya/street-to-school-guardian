@@ -225,12 +225,14 @@ def evaluate(model):
         raise ValueError("Token-equivalent training/evaluation overlap.")
     cases = []
     for group in ("queries", "challenge_queries", "unmatched_queries"):
-        for item in evaluation[group]:
+        for index, item in enumerate(evaluation[group], 1):
             text = item if group == "unmatched_queries" else item["text"]
             relevant = set() if group == "unmatched_queries" else set(item["relevant"])
             ids = [row["id"] for row in model.rank(text, limit=3)]
             cases.append({
+                "case_id": f"{group}:{index}",
                 "group": group, "text": text, "relevant": sorted(relevant), "ranked": ids,
+                "diagnostics": model.diagnostics(text),
                 "abstained": not ids,
                 "top1_hit": bool(ids and ids[0] in relevant) if relevant else None,
                 "recall_at_3": len(relevant.intersection(ids)) / len(relevant) if relevant else None,
@@ -264,6 +266,11 @@ def evaluate(model):
             "answered_top1_hit_rate": round(sum(row["top1_hit"] for row in answered) / len(answered), 6)
                 if answered else None
         }
+    diagnostic_counts = {
+        group: dict(sorted(Counter(row["diagnostics"]["reason"] for row in cases
+                                   if row["group"] == group).items()))
+        for group in ("queries", "challenge_queries", "unmatched_queries")
+    }
     return {
         "positive_queries": len(positive), "unmatched_queries": len(negatives),
         "top1_hit_rate": round(sum(row["top1_hit"] for row in positive) / len(positive), 6),
@@ -278,5 +285,7 @@ def evaluate(model):
         "resource_coverage": coverage,
         "unlabeled_resources": [row["resource_id"] for row in coverage if not row["labeled_queries"]],
         "group_metrics": group_metrics,
+        "diagnostic_counts": diagnostic_counts,
+        "unexpected_match_cases": [row["case_id"] for row in negatives if not row["abstained"]],
         "note": "Small synthetic editorial benchmark, not field accuracy or impact."
     }
