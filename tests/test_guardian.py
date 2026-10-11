@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from guardian.model import DATA_DIR, Retriever, evaluate, load_catalog, tokens
 from guardian.server import create_server
-from guardian.service import RequestError, browse, handoff, match
+from guardian.service import RequestError, browse, compare, handoff, match
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -278,6 +278,21 @@ class ConsentTests(unittest.TestCase):
             with self.assertRaises(RequestError):
                 browse(self.model, {"consent": True, **fields})
 
+    def test_comparison_is_bounded_unranked_and_uses_only_metadata(self):
+        result = compare(self.model, {"consent": True, "resource_ids": ["transport", "meal"]})
+        self.assertEqual([r["id"] for r in result["resources"]], ["transport", "meal"])
+        self.assertEqual(result["shared_modes"], ["offline"])
+        self.assertEqual(result["differing_fields"], ["category", "modes"])
+        self.assertNotIn("score", result["resources"][0])
+        result["resources"][0]["modes"].clear()
+        self.assertEqual(len(self.model.catalog[1]["modes"]), 2)
+        for ids in ([], ["transport"], ["transport"] * 2, ["missing", "meal"],
+                    [None, "meal"], ["transport", "meal", "tutoring", "language"]):
+            with self.assertRaises(RequestError):
+                compare(self.model, {"consent": True, "resource_ids": ids})
+        with self.assertRaises(RequestError):
+            compare(self.model, {"consent": False, "resource_ids": ["transport", "meal"]})
+
 
 class HTTPTests(unittest.TestCase):
     @classmethod
@@ -340,6 +355,12 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(status, 200)
         self.assertEqual(len(json.loads(body)["results"]), 2)
         self.assertEqual(headers["Cache-Control"], "no-store")
+
+    def test_http_comparison_preserves_selected_order(self):
+        payload = {"consent": True, "resource_ids": ["meal", "transport"]}
+        status, _, body = self.request("/api/compare", payload)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body), compare(self.model, payload))
 
     def test_http_no_match_and_input_errors(self):
         for raw in ('{"consent":false,"consent":true,"text":"bus fares"}',

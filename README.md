@@ -59,6 +59,10 @@ This is browsing, not a relevance ranking, entitlement or availability check.
 The same bounded metadata view is available offline with
 `python -m guardian browse --consent --category Food --limit 2`.
 Use the returned `next_offset` with `--offset` for another page; no stdin is read.
+`POST /api/compare` accepts explicit consent and two or three distinct
+`resource_ids` from the catalog. It preserves selection order and shows shared
+formats and differing metadata, without scoring suitability or preferring a
+resource. Unknown IDs fail the whole request; no partial comparison is returned.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

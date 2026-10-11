@@ -47,6 +47,30 @@ def browse(model, payload):
     }
 
 
+def selected_resources(model, payload, minimum=1):
+    consent_fields(payload, {"resource_ids"})
+    ids = payload.get("resource_ids")
+    if (not isinstance(ids, list) or not minimum <= len(ids) <= 3
+            or any(not isinstance(rid, str) for rid in ids) or len(set(ids)) != len(ids)):
+        raise RequestError(f"Choose {minimum} through 3 distinct demo resource IDs.")
+    catalog = {row["id"]: row for row in model.catalog}
+    if any(rid not in catalog for rid in ids):
+        raise RequestError("Unknown demo resource.", 404)
+    return [deepcopy(catalog[rid]) for rid in ids]
+
+
+def compare(model, payload):
+    rows = selected_resources(model, payload, minimum=2)
+    fields = ("category", "modes", "language", "cost", "availability")
+    return {
+        "status": "comparison_only", "resources": rows,
+        "shared_modes": sorted(set.intersection(*(set(row["modes"]) for row in rows))),
+        "differing_fields": [field for field in fields
+                             if any(row[field] != rows[0][field] for row in rows[1:])],
+        "message": "Compare fictional descriptions, not people. No option is preferred, verified or eligible by this comparison."
+    }
+
+
 def validate(payload, action="match"):
     if not isinstance(payload, dict):
         raise RequestError("Send a JSON object.")
