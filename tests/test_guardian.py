@@ -80,6 +80,16 @@ class ModelTests(unittest.TestCase):
         self.catalog[1]["description"] = "Changed after fitting"
         self.assertEqual(self.model.rank("bus fares"), before)
 
+    def test_catalog_schema_blocks_personal_extensions_hidden_controls_and_unbounded_ids(self):
+        for fields in ({"contact": "not allowed"}, {"eligibility": "not allowed"},
+                       {"description": "bus\x00fares"}, {"title": "Hidden\u202etitle"},
+                       {"id": "white space"}, {"id": "x" * 81}, {"description": "x" * 1601}):
+            catalog = copy.deepcopy(self.catalog)
+            catalog[0].update(fields)
+            with self.assertRaises(ValueError):
+                Retriever(catalog)
+        self.assertEqual(Retriever(self.catalog).fit().rank("notebooks")[0]["id"], "learning-kit")
+
     def test_invalid_retrieval_options_and_unfitted_model_are_rejected(self):
         for text, mode, limit in ((None, "any", 3), ("bus", [], 3),
                                   ("bus", "any", True), ("bus", "any", 0)):

@@ -167,6 +167,10 @@ the current category, across the whole catalog rather than only the page.
 The dashboard labels those counts and keeps zero-count categories visible so
 filter limitations are understandable. Offline/online counts can overlap and
 must not be summed as distinct services; these are fictional catalog counts only.
+Catalog validation rejects unknown fields (including accidental contact or
+eligibility extensions), oversized text, hidden control characters and malformed
+IDs before fitting or serving. The accepted schema remains fictional resource
+metadata only; this check is not verification of real organizations.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

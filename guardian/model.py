@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import re
 import tempfile
+import unicodedata
 
 DATA_DIR = Path(__file__).parent / "data"
 MIN_SCORE = 0.12
@@ -41,12 +42,21 @@ class Retriever:
         if not isinstance(catalog, list) or not catalog:
             raise ValueError("Provide a nonempty resource catalog.")
         seen = set()
+        fields = {"id", "title", "category", "description", "language", "cost", "availability", "handoff", "modes"}
         for row in catalog:
             if not isinstance(row, dict):
                 raise ValueError("Each catalog resource must be an object.")
+            if set(row) != fields:
+                raise ValueError("Catalog resources must use only the fictional resource schema; no personal fields.")
             for field in ("id", "title", "category", "description", "language", "cost", "availability", "handoff"):
                 if not isinstance(row.get(field), str) or not row[field].strip():
                     raise ValueError(f"Catalog resource {field} must be nonempty text.")
+                maximum = 1600 if field in {"description", "handoff"} else 240
+                if len(row[field]) > maximum or any(unicodedata.category(char) in {"Cf", "Cs", "Cc"}
+                                                   and char not in "\n\r\t" for char in row[field]):
+                    raise ValueError("Catalog text must be bounded plain text without hidden controls.")
+            if not re.fullmatch(r"[a-z][a-z0-9-]{0,79}", row["id"]):
+                raise ValueError("Use bounded lowercase hyphenated catalog IDs.")
             if row["id"] in seen:
                 raise ValueError("Catalog resource IDs must be unique.")
             seen.add(row["id"])
