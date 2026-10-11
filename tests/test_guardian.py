@@ -102,6 +102,23 @@ class ModelTests(unittest.TestCase):
             with self.subTest(text=text):
                 self.assertEqual(self.model.rank(text), [])
 
+    def test_query_diagnostics_explain_catalog_limits_without_echoing_terms(self):
+        for text, mode, reason in (
+            ("Learning support", "any", "no_usable_terms"),
+            ("quantum entanglement", "any", "outside_vocabulary"),
+            ("printed worksheets paper exercises", "online", "format_excluded_matches"),
+            ("bus fares", "offline", "matched"),
+        ):
+            diagnostic = self.model.diagnostics(text, mode)
+            self.assertEqual(diagnostic["reason"], reason)
+            self.assertNotIn(text, json.dumps(diagnostic))
+            self.assertEqual(diagnostic["match_count"], len(self.model.rank(text, mode, limit=12)))
+        catalog = copy.deepcopy(self.catalog[:1])
+        model = Retriever(catalog).fit()
+        self.assertEqual(model.diagnostics("notebooks", "online")["reason"], "empty_format")
+        self.assertEqual(model.diagnostics("notebooks " + " ".join(model.idf), "offline")["known_term_count"],
+                         len(model.idf))
+
     def test_saved_model_roundtrip_and_tamper_detection(self):
         path = ROOT / "models" / "test-roundtrip.json"
         try:

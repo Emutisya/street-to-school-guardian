@@ -126,6 +126,29 @@ class Retriever:
             if temporary is not None:
                 temporary.unlink(missing_ok=True)
 
+    def diagnostics(self, text, mode="any"):
+        ranked = self.rank(text, mode, limit=len(self.catalog))
+        words = set(tokens(text))
+        known = words.intersection(self.idf)
+        candidates = sum(mode == "any" or mode in row["modes"] for row in self.catalog)
+        if ranked:
+            reason = "matched"
+        elif not words:
+            reason = "no_usable_terms"
+        elif not known:
+            reason = "outside_vocabulary"
+        elif not candidates:
+            reason = "empty_format"
+        elif mode != "any" and self.rank(text, "any", limit=len(self.catalog)):
+            reason = "format_excluded_matches"
+        else:
+            reason = "below_similarity_threshold"
+        return {
+            "reason": reason, "usable_term_count": len(words), "known_term_count": len(known),
+            "candidate_count": candidates, "match_count": len(ranked),
+            "note": "Counts describe the synthetic catalog and tokenizer, never a person. No input terms are returned."
+        }
+
     @classmethod
     def load(cls, path, catalog):
         saved = json.loads(Path(path).read_text(encoding="utf-8"))

@@ -122,6 +122,7 @@ def match(model, payload):
     ranked = model.rank(text, mode)
     return {
         "results": ranked, "status": "matched" if ranked else "no_match",
+        "diagnostics": model.diagnostics(text, mode),
         "message": "Fictional options for a human conversation; no referral has been sent."
         if ranked else "No close demo match. Try a specific general barrier, relax the format preference, or discuss options with a trusted human. This is not a denial of support.",
         "score_note": "TF-IDF cosine similarity, not a probability, need score or eligibility decision."

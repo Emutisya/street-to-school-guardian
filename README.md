@@ -69,6 +69,11 @@ No barrier text or notes are accepted, and no plan is retained.
 CLI equivalents: `python -m guardian compare --consent meal transport` and
 `python -m guardian plan --consent meal transport`. Output is a synthetic preview,
 not a referral, contact form, application, reservation or eligibility judgment.
+Match responses also include count-only diagnostics distinguishing generic input,
+out-of-vocabulary descriptions, empty format catalogs, format-excluded matches
+and below-threshold similarity. Counts use unique usable English tokenizer terms;
+they are not language detection, a person's need score or a denial of support.
+No unmatched words or original descriptions are echoed in diagnostics.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
