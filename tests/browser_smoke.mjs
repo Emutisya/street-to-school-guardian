@@ -118,6 +118,15 @@ try {
   assert.ok((await run("document.getElementById('status').textContent")).includes("Remove"));
   await run("document.getElementById('clear').click()");
   assert.equal(await run("!document.getElementById('consent').checked && document.getElementById('find').disabled"), true);
+
+  await run(`window.savedFetch = window.fetch; window.fetch = async (...args) => {
+    const response = await window.savedFetch(...args);
+    await new Promise(resolve => setTimeout(resolve, 350)); return response;
+  }; document.getElementById('consent').click(); document.querySelector('[data-preset]').click();
+  document.getElementById('find').click(); document.getElementById('cancel-request').click();`);
+  await delay(600);
+  assert.equal(await run("document.getElementById('consent').checked && document.getElementById('barrier').value !== '' && !document.querySelector('.resource') && document.getElementById('cancel-request').hidden"), true, "Cancel preserves example but gates late response");
+  await run("window.fetch = window.savedFetch; document.getElementById('clear').click()");
   assert.equal(await run("document.getElementById('browse').disabled"), true);
   await run("document.getElementById('consent').click(); document.getElementById('browse').click()");
   await until(() => run("document.querySelectorAll('.resource').length === 6"), "catalog browse without input");

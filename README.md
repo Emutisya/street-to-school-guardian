@@ -114,6 +114,11 @@ English vocabulary limitations without guessing the input language, and offer an
 explicit “Try any fictional format” retry only when format constraints caused the
 absence of matches. The user chooses this retry; preferences are never relaxed
 silently and consent remains required.
+“Cancel pending local request” aborts the page request and invalidates late
+responses without withdrawing consent or erasing the current anonymous example.
+It appears only while a request is pending. Canceling a browser request cannot
+undo server processing which has already completed; reset/withdrawal additionally
+clear the example and transient choices.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
