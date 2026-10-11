@@ -6,6 +6,10 @@ Model and synthetic report publication flush and synchronize the completed file
 before atomic replacement. A sync failure preserves the previous artifact and
 removes the staging file. This improves file durability, not a guarantee against
 all filesystem or power-loss failures.
+`python -m guardian check-artifact models\tfidf.json` classifies unreadable files,
+invalid framing/schema, unsupported versions, stale catalogs and weight mismatch.
+The stdout diagnostic contains no artifact content and exits two on incompatibility;
+the recovery is deterministic retraining, not a claim of cryptographic authenticity.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

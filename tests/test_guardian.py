@@ -952,6 +952,25 @@ class CLITests(unittest.TestCase):
         finally:
             path.unlink(missing_ok=True)
 
+    def test_cli_artifact_check_classifies_version_catalog_and_weight_failures(self):
+        path = ROOT / "models" / "check-artifact-test.json"
+        try:
+            model = Retriever(load_catalog()).fit()
+            model.save(path)
+            original = json.loads(path.read_text(encoding="utf-8"))
+            valid = self.run_cli("check-artifact", str(path))
+            self.assertEqual(valid.returncode, 0, valid.stderr)
+            for fields, code in (({"version": 2}, "unsupported_version"),
+                                 ({"catalog_sha256": "not-current"}, "catalog_mismatch"),
+                                 ({"idf": {}}, "weights_or_schema_mismatch")):
+                path.write_text(json.dumps({**original, **fields}), encoding="utf-8")
+                result = self.run_cli("check-artifact", str(path))
+                self.assertEqual(result.returncode, 2)
+                self.assertEqual(json.loads(result.stdout)["code"], code)
+                self.assertNotIn("not-current", result.stdout)
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_invalid_port_precedes_model_loading(self):
         for port in ("-1", "65536", "999999999999999999999"):
             with self.subTest(port=port):

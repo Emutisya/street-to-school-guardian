@@ -5,6 +5,7 @@ import sys
 
 from .model import Retriever, audit_catalog, evaluate, evaluate_baselines, evaluate_formats, load_catalog
 from .reporting import compare_evaluation, save_evaluation
+from .artifacts import check_artifact
 from .server import create_server
 from .service import RequestError, browse, compare, explain, match, plan, related
 
@@ -25,6 +26,8 @@ def main():
     commands.add_parser("evaluate-baselines", help="Compare fixed TF-IDF, lexical-overlap and always-abstain baselines")
     inspect = commands.add_parser("inspect", help="Describe the fitted catalog or validate a saved artifact without queries")
     inspect.add_argument("--model", help="Validate this artifact by exact deterministic refit")
+    check = commands.add_parser("check-artifact", help="Classify compatibility failures without echoing artifact contents")
+    check.add_argument("artifact")
     serve = commands.add_parser("serve", help="Serve the dashboard on loopback only")
     serve.add_argument("--port", type=int, default=8765)
     serve.add_argument("--model", help="Validate a saved artifact; otherwise fit in memory")
@@ -74,6 +77,10 @@ def main():
             print(json.dumps(compare_evaluation(model, args.snapshot), indent=2))
         elif args.command == "inspect":
             print(json.dumps({**model.summary(), "source": "validated_artifact" if args.model else "in_memory_fit"}, indent=2))
+        elif args.command == "check-artifact":
+            report = check_artifact(args.artifact, catalog)
+            print(json.dumps(report, indent=2))
+            return 0 if report["status"] == "valid" else 2
         elif args.command == "browse":
             print(json.dumps(browse(model, {
                 "consent": args.consent, "mode": args.mode, "category": args.category,
