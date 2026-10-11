@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import sys
 import threading
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -72,6 +73,17 @@ class ModelTests(unittest.TestCase):
                 self.model.rank(text, mode, limit)
         with self.assertRaisesRegex(ValueError, "Fit or load"):
             Retriever(self.catalog).rank("bus fares")
+
+    def test_empty_description_vectors_and_unfitted_artifacts_are_rejected(self):
+        catalog = copy.deepcopy(self.catalog)
+        catalog[0]["description"] = "the and school"
+        with self.assertRaisesRegex(ValueError, "usable retrieval terms"):
+            Retriever(catalog).fit()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "unfitted.json"
+            with self.assertRaisesRegex(ValueError, "before saving"):
+                Retriever(self.catalog).save(path)
+            self.assertFalse(path.exists())
 
     def test_format_filter_is_not_eligibility(self):
         result = match(self.model, {"consent": True, "text": "Printed worksheets and paper exercises.", "mode": "online"})

@@ -59,6 +59,8 @@ class Retriever:
 
     def fit(self):
         counts = {r["id"]: Counter(tokens(r["description"])) for r in self.catalog}
+        if any(not count for count in counts.values()):
+            raise ValueError("Every resource description must contain usable retrieval terms.")
         frequency = Counter(word for doc in counts.values() for word in doc)
         size = len(counts)
         self.idf = {word: math.log((1 + size) / (1 + n)) + 1
@@ -103,6 +105,8 @@ class Retriever:
         return [item for _, item in results[:limit]]
 
     def save(self, path):
+        if not self.idf or set(self.vectors) != {row["id"] for row in self.catalog}:
+            raise ValueError("Fit or load the model before saving an artifact.")
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps({
