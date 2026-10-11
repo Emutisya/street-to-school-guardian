@@ -335,3 +335,24 @@ def evaluate_formats(model):
     return {"catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
             "profiles": profiles,
             "note": "Format diagnostics on fixed synthetic labels. Excluded labels are catalog constraints, never family eligibility."}
+
+
+def audit_catalog(model):
+    benchmark = evaluate(model)
+    token_groups, vector_groups = {}, {}
+    for row in sorted(model.catalog, key=lambda row: row["id"]):
+        signature = tuple(sorted(Counter(tokens(row["description"])).items()))
+        vector = tuple(sorted(model.vectors[row["id"]].items()))
+        token_groups.setdefault(signature, []).append(row["id"])
+        vector_groups.setdefault(vector, []).append(row["id"])
+    exercised = {word for case in benchmark["cases"] for word in tokens(case["text"])} & set(model.idf)
+    unused = sorted(set(model.idf) - exercised)
+    return {
+        "catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
+        "token_equivalent_resources": [ids for ids in token_groups.values() if len(ids) > 1],
+        "identical_vector_resources": [ids for ids in vector_groups.values() if len(ids) > 1],
+        "vocabulary_terms": len(model.idf), "exercised_terms": len(exercised),
+        "unexercised_terms": unused[:50], "unexercised_term_count": len(unused),
+        "omitted_unexercised_terms": max(0, len(unused) - 50),
+        "note": "Editorial synthetic catalog audit, not data about people. Identical vectors cannot be distinguished by this retriever; no resources are automatically merged."
+    }

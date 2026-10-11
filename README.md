@@ -171,6 +171,11 @@ Catalog validation rejects unknown fields (including accidental contact or
 eligibility extensions), oversized text, hidden control characters and malformed
 IDs before fitting or serving. The accepted schema remains fictional resource
 metadata only; this check is not verification of real organizations.
+`python -m guardian audit-catalog` finds token-equivalent descriptions and exact
+vector collisions which the retriever cannot distinguish, plus vocabulary terms
+never exercised by the bundled synthetic benchmark. The term preview is bounded
+to fifty with an explicit omitted count. This is an editorial audit, not a quality
+score or automatic catalog-merging decision.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

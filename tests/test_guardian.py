@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from guardian.model import DATA_DIR, Retriever, evaluate, evaluate_formats, load_catalog, tokens
+from guardian.model import DATA_DIR, Retriever, audit_catalog, evaluate, evaluate_formats, load_catalog, tokens
 from guardian.server import create_server
 from guardian.reporting import compare_evaluation, save_evaluation
 from guardian.service import RequestError, browse, compare, handoff, match, plan, related
@@ -293,6 +293,19 @@ class ModelTests(unittest.TestCase):
         empty = evaluate_formats(offline_only)["profiles"]["online"]["metrics"]["queries"]
         self.assertEqual(empty["evaluated_queries"], 0)
         self.assertIsNone(empty["top1_hit_rate"])
+
+    def test_catalog_audit_detects_indistinguishable_resources_and_unexercised_words(self):
+        catalog = copy.deepcopy(self.catalog)
+        catalog[0]["description"] = "orchard apples"
+        catalog[1]["description"] = "apples orchard"
+        report = audit_catalog(Retriever(catalog).fit())
+        expected = [["learning-kit", "transport"]]
+        self.assertEqual(report["token_equivalent_resources"], expected)
+        self.assertEqual(report["identical_vector_resources"], expected)
+        self.assertIn("orchard", report["unexercised_terms"])
+        self.assertEqual(report["exercised_terms"] + report["unexercised_term_count"], report["vocabulary_terms"])
+        self.assertLessEqual(len(report["unexercised_terms"]), 50)
+        self.assertEqual(report, audit_catalog(Retriever(catalog).fit()))
 
     def test_token_equivalent_queries_cannot_inflate_evaluation(self):
         data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
@@ -633,6 +646,11 @@ class CLITests(unittest.TestCase):
         run = self.run_cli("evaluate-formats")
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(json.loads(run.stdout), evaluate_formats(Retriever(load_catalog()).fit()))
+
+    def test_cli_catalog_audit_is_reproducible(self):
+        run = self.run_cli("audit-catalog")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertEqual(json.loads(run.stdout), audit_catalog(Retriever(load_catalog()).fit()))
 
     def test_evaluation_snapshot_is_atomic_repository_local_and_cli_reproducible(self):
         path = ROOT / "models" / "snapshot-test.json"

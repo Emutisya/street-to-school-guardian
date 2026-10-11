@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import sys
 
-from .model import Retriever, evaluate, evaluate_formats, load_catalog
+from .model import Retriever, audit_catalog, evaluate, evaluate_formats, load_catalog
 from .reporting import compare_evaluation, save_evaluation
 from .server import create_server
 from .service import RequestError, browse, compare, match, plan, related
@@ -20,6 +20,7 @@ def main():
     comparison = commands.add_parser("compare-evaluation", help="Compare validated synthetic case ranks to a repository-local snapshot")
     comparison.add_argument("snapshot")
     commands.add_parser("evaluate-formats", help="Audit fixed benchmark labels under any, offline and online filters")
+    commands.add_parser("audit-catalog", help="Find indistinguishable descriptions and synthetic vocabulary coverage gaps")
     inspect = commands.add_parser("inspect", help="Describe the fitted catalog or validate a saved artifact without queries")
     inspect.add_argument("--model", help="Validate this artifact by exact deterministic refit")
     serve = commands.add_parser("serve", help="Serve the dashboard on loopback only")
@@ -57,6 +58,8 @@ def main():
             print(json.dumps(report, indent=2))
         elif args.command == "evaluate-formats":
             print(json.dumps(evaluate_formats(model), indent=2))
+        elif args.command == "audit-catalog":
+            print(json.dumps(audit_catalog(model), indent=2))
         elif args.command == "compare-evaluation":
             print(json.dumps(compare_evaluation(model, args.snapshot), indent=2))
         elif args.command == "inspect":
