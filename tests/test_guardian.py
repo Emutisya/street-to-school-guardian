@@ -144,6 +144,19 @@ class ModelTests(unittest.TestCase):
             with patch("guardian.model.json.loads", return_value=data), self.assertRaises(ValueError):
                 evaluate(self.model)
 
+    def test_token_equivalent_queries_cannot_inflate_evaluation(self):
+        data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
+        duplicate = copy.deepcopy(data["queries"][0])
+        duplicate["text"] = duplicate["text"] + "!!!"
+        data["queries"].append(duplicate)
+        with patch("guardian.model.json.loads", return_value=data), self.assertRaisesRegex(ValueError, "Token-equivalent"):
+            evaluate(self.model)
+        resources = copy.deepcopy(self.catalog)
+        original = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
+        resources[0]["description"] = original["queries"][0]["text"] + "!!!"
+        with self.assertRaisesRegex(ValueError, "Token-equivalent"):
+            evaluate(Retriever(resources).fit())
+
 
 class ConsentTests(unittest.TestCase):
     @classmethod
