@@ -685,6 +685,15 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(json.loads(self.request("/api/related", payload)[2]), related(self.model, payload))
         self.assertEqual(self.request("/api/related", {**payload, "consent": False})[0], 403)
 
+    def test_single_resource_detail_is_copied_and_consent_gated(self):
+        payload = {"consent": True, "resource_id": "meal"}
+        status, _, body = self.request("/api/resource", payload)
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)["resource"]["id"], "meal")
+        self.assertNotIn("score", json.loads(body)["resource"])
+        self.assertEqual(self.request("/api/resource", {**payload, "consent": False})[0], 403)
+        self.assertEqual(self.request("/api/resource", {**payload, "text": "not accepted"})[0], 400)
+
     def test_http_exclusion_explanation_requires_anonymous_consent(self):
         payload = {"consent": True, "text": "Bus fares and buying notebooks"}
         status, _, body = self.request("/api/explain", payload)
@@ -824,6 +833,13 @@ class CLITests(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(json.loads(run.stdout)["source_id"], "connectivity")
         self.assertNotIn("ignored stdin", run.stdout)
+
+    def test_cli_single_resource_detail_needs_no_description(self):
+        result = self.run_cli("resource", "--consent", "meal", text="ignored stdin")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout)["resource"]["category"], "Food")
+        self.assertNotIn("ignored stdin", result.stdout)
+        self.assertEqual(self.run_cli("resource", "--consent", "missing").returncode, 2)
 
     def test_cli_explain_is_consent_gated_and_emits_only_catalog_diagnostics(self):
         self.assertEqual(self.run_cli("explain", text="bus fares").returncode, 2)

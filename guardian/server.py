@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .service import RequestError, browse, compare, explain, handoff, match, plan, related
+from .service import RequestError, browse, compare, explain, handoff, match, plan, related, resource_detail
 
 HTML = Path(__file__).parent / "web" / "index.html"
 MAX_BODY = 4096
@@ -98,7 +98,7 @@ def create_server(model, port=8765):
                 self.guard()
                 operations = {"/api/match": match, "/api/handoff": handoff,
                               "/api/browse": browse, "/api/compare": compare, "/api/plan": plan,
-                              "/api/related": related, "/api/explain": explain}
+                              "/api/related": related, "/api/explain": explain, "/api/resource": resource_detail}
                 if self.path not in operations:
                     raise RequestError("Route not found.", 404, "route_not_found")
                 if len(self.headers.get_all("Content-Type", [])) != 1 or self.headers.get_content_type() != "application/json":

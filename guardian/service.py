@@ -119,6 +119,13 @@ def related(model, payload):
             "message": "Similar fictional catalog descriptions only. Your barrier is not processed; similarity is not suitability, availability or a referral."}
 
 
+def resource_detail(model, payload):
+    consent_fields(payload, {"resource_id"})
+    rows = selected_resources(model, {"consent": True, "resource_ids": [payload.get("resource_id")]})
+    return {"status": "catalog_only", "resource": rows[0],
+            "message": "One fictional catalog entry for human review. No verified availability, personal suitability or referral is implied."}
+
+
 def validate(payload, action="match"):
     if not isinstance(payload, dict):
         raise RequestError("Send a JSON object.", code="invalid_payload")
