@@ -97,6 +97,19 @@ class ModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             evaluate(Retriever(leaked).fit())
 
+    def test_evaluation_rejects_empty_groups_and_invalid_resource_labels(self):
+        original = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
+        for mutate in (
+            lambda data: data.update(queries=[]),
+            lambda data: data.update(unmatched_queries=[]),
+            lambda data: data["queries"][0].update(relevant=["missing"]),
+            lambda data: data["queries"][0].update(relevant=["transport"] * 2),
+        ):
+            data = copy.deepcopy(original)
+            mutate(data)
+            with patch("guardian.model.json.loads", return_value=data), self.assertRaises(ValueError):
+                evaluate(self.model)
+
 
 class ConsentTests(unittest.TestCase):
     @classmethod
