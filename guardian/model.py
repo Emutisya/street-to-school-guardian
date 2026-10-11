@@ -179,30 +179,33 @@ def evaluate(model):
         raise ValueError("Token-equivalent duplicate evaluation query.")
     if {query for query in canonical_queries if query} & {canonical(text) for text in training_texts}:
         raise ValueError("Token-equivalent training/evaluation overlap.")
-    hits, recalls, reciprocals = [], [], []
-    for item in evaluation["queries"]:
-        ranked = model.rank(item["text"], limit=3)
-        ids = [r["id"] for r in ranked]
-        relevant = set(item["relevant"])
-        hits.append(bool(ids and ids[0] in relevant))
-        recalls.append(len(relevant.intersection(ids)) / len(relevant))
-        reciprocals.append(next((1 / (i + 1) for i, rid in enumerate(ids)
-                                 if rid in relevant), 0))
-    negatives = evaluation["unmatched_queries"]
-    rejected = sum(not model.rank(q) for q in negatives)
-    challenges = evaluation["challenge_queries"]
-    challenge_hits = sum(bool(set(q["relevant"]).intersection(
-        r["id"] for r in model.rank(q["text"], limit=3))) for q in challenges)
-    challenge_abstentions = sum(not model.rank(q["text"]) for q in challenges)
+    cases = []
+    for group in ("queries", "challenge_queries", "unmatched_queries"):
+        for item in evaluation[group]:
+            text = item if group == "unmatched_queries" else item["text"]
+            relevant = set() if group == "unmatched_queries" else set(item["relevant"])
+            ids = [row["id"] for row in model.rank(text, limit=3)]
+            cases.append({
+                "group": group, "text": text, "relevant": sorted(relevant), "ranked": ids,
+                "abstained": not ids,
+                "top1_hit": bool(ids and ids[0] in relevant) if relevant else None,
+                "recall_at_3": len(relevant.intersection(ids)) / len(relevant) if relevant else None,
+                "reciprocal_rank": next((1 / (i + 1) for i, rid in enumerate(ids)
+                                        if rid in relevant), 0) if relevant else None,
+            })
+    positive = [row for row in cases if row["group"] == "queries"]
+    negatives = [row for row in cases if row["group"] == "unmatched_queries"]
+    challenges = [row for row in cases if row["group"] == "challenge_queries"]
     return {
-        "positive_queries": len(hits), "unmatched_queries": len(negatives),
-        "top1_hit_rate": round(sum(hits) / len(hits), 6),
-        "mean_recall_at_3": round(sum(recalls) / len(recalls), 6),
-        "mrr_at_3": round(sum(reciprocals) / len(reciprocals), 6),
-        "unmatched_rejection_rate": round(rejected / len(negatives), 6),
+        "positive_queries": len(positive), "unmatched_queries": len(negatives),
+        "top1_hit_rate": round(sum(row["top1_hit"] for row in positive) / len(positive), 6),
+        "mean_recall_at_3": round(sum(row["recall_at_3"] for row in positive) / len(positive), 6),
+        "mrr_at_3": round(sum(row["reciprocal_rank"] for row in positive) / len(positive), 6),
+        "unmatched_rejection_rate": round(sum(row["abstained"] for row in negatives) / len(negatives), 6),
         "challenge_queries": len(challenges),
-        "challenge_hit_at_3": round(challenge_hits / len(challenges), 6),
-        "challenge_abstention_rate": round(challenge_abstentions / len(challenges), 6),
+        "challenge_hit_at_3": round(sum(row["recall_at_3"] > 0 for row in challenges) / len(challenges), 6),
+        "challenge_abstention_rate": round(sum(row["abstained"] for row in challenges) / len(challenges), 6),
         "threshold": MIN_SCORE, "catalog_sha256": fingerprint(model.catalog),
+        "benchmark_sha256": fingerprint(evaluation), "cases": cases,
         "note": "Small synthetic editorial benchmark, not field accuracy or impact."
     }

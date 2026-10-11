@@ -174,6 +174,24 @@ class ModelTests(unittest.TestCase):
             with patch("guardian.model.json.loads", return_value=data), self.assertRaises(ValueError):
                 evaluate(self.model)
 
+    def test_evaluation_cases_expose_failures_and_track_benchmark_provenance(self):
+        report = evaluate(self.model)
+        self.assertEqual(report, evaluate(self.model))
+        cases = report["cases"]
+        self.assertEqual(len(cases), report["positive_queries"] + report["challenge_queries"] + report["unmatched_queries"])
+        for case in cases:
+            self.assertEqual(case["ranked"], [row["id"] for row in self.model.rank(case["text"])])
+        self.assertTrue(any(case["group"] == "challenge_queries" and case["abstained"] for case in cases))
+        positive = [case for case in cases if case["group"] == "queries"]
+        self.assertAlmostEqual(report["mean_recall_at_3"],
+                               sum(case["recall_at_3"] for case in positive) / len(positive), places=6)
+        changed = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
+        changed["description"] += " Updated synthetic annotation."
+        with patch("guardian.model.json.loads", return_value=changed):
+            revised = evaluate(self.model)
+        self.assertEqual(revised["cases"], report["cases"])
+        self.assertNotEqual(revised["benchmark_sha256"], report["benchmark_sha256"])
+
     def test_token_equivalent_queries_cannot_inflate_evaluation(self):
         data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
         duplicate = copy.deepcopy(data["queries"][0])
