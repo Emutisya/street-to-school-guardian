@@ -98,6 +98,13 @@ try {
   assert.equal(await run("document.querySelector('.resource details summary').textContent.startsWith('All ')"), true);
   await run("document.querySelector('.resource details summary').click()");
   assert.equal(await run("document.querySelector('.resource details').open"), true, "Complete explanation is expandable");
+  await run("document.getElementById('explain-retrieval').click()");
+  await until(() => run("document.getElementById('retrieval-audit').open"), "retrieval limit explanation");
+  assert.equal(await run("document.querySelectorAll('#audit-candidates li').length"), 12);
+  assert.equal(await run("document.activeElement.id"), "audit-title");
+  assert.ok((await run("document.getElementById('audit-candidates').textContent")).includes("not a denial"));
+  await run("document.getElementById('close-audit').click()");
+  await until(() => run("document.activeElement.id === 'explain-retrieval'"), "audit focus return");
   const lightShot = await rpc("Page.captureScreenshot", {format: "png", captureBeyondViewport: true});
   await writeFile(path.join(artifacts, "desktop-light.png"), Buffer.from(lightShot.data, "base64"));
   await run("document.querySelector('.resource button').click()");
@@ -114,6 +121,7 @@ try {
   assert.equal(await run("document.activeElement.getAttribute('aria-label')?.startsWith('Preview human handoff')"), true);
   await run("document.getElementById('consent').click()");
   assert.equal(await run("document.getElementById('barrier').value === '' && !document.querySelector('.resource') && !document.getElementById('handoff').open"), true);
+  assert.equal(await run("document.getElementById('explain-retrieval').disabled && document.getElementById('audit-candidates').children.length === 0"), true, "Withdrawal clears retrieval audit");
   await run("document.getElementById('consent').click(); document.getElementById('barrier').value = 'quantum entanglement'; document.getElementById('barrier').dispatchEvent(new Event('input')); document.getElementById('find').click()");
   await until(() => run("document.getElementById('result-count').textContent === '0 demo ideas'"), "no-match state");
   assert.ok((await run("document.getElementById('results').textContent")).includes("not a denial"));

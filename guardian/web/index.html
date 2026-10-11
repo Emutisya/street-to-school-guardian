@@ -135,7 +135,7 @@
     .principles h3 { font-size: 16px; margin-top: 0; }
     .principles p { font-size: 14px; color: var(--cp-text-muted); }
     footer { border-top: 1px solid var(--cp-border); padding: 20px 0 28px; color: var(--cp-text-muted); font-size: 12px; }
-    dialog { max-width: 560px; width: calc(100% - 32px); padding: 28px; border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-surface); color: var(--cp-text); }
+    dialog { max-width: 560px; max-height: calc(100dvh - 48px); overflow: auto; width: calc(100% - 32px); padding: 28px; border: 1px solid var(--cp-border); border-radius: 16px; background: var(--cp-surface); color: var(--cp-text); }
     dialog::backdrop { background: var(--cp-overlay); }
     dialog li { margin-bottom: 12px; }
     dialog ol { padding-left: 24px; }
@@ -229,6 +229,7 @@
         <div class="results-top"><div><div class="step">02 / SUPPORT IDEAS</div><h2 id="results-title">A starting point for a conversation</h2></div><span class="pill" id="result-count">Awaiting consent</span></div>
         <p class="subtle">Ranked by description similarity, not urgency, personal need or likelihood of success. Every option needs human verification.</p>
         <div role="status" aria-live="polite" id="status"></div>
+        <button id="explain-retrieval" type="button" disabled>Explain current retrieval limits</button>
         <div id="results">
           <div class="empty"><div class="empty-symbol" aria-hidden="true">↗</div><h3>No one needs a risk score.</h3><p>Choose consent and try an anonymous example to explore relevant fictional supports. You stay in control.</p></div>
         </div>
@@ -260,6 +261,7 @@
     <button id="print-plan" type="button" disabled>Print fictional checklist only</button>
     <button id="close-plan" type="button">Return to choices</button>
   </dialog>
+  <dialog id="retrieval-audit" aria-labelledby="audit-title"><h2 id="audit-title">Why fictional options appear or do not</h2><p id="audit-note" class="subtle"></p><ul id="audit-candidates"></ul><button id="close-audit" type="button">Return to ideas</button></dialog>
   <script>
     (() => {
       // Preserve the mandated initial script while correctly supporting explicit light.
@@ -268,7 +270,7 @@
       const $ = id => document.getElementById(id);
       const consent = $("consent"), barrier = $("barrier"), mode = $("mode");
       const results = $("results"), status = $("status");
-      let epoch = 0, pending = null, busy = false, nextOffset = null, previousOffset = null;
+      let epoch = 0, pending = null, busy = false, nextOffset = null, previousOffset = null, canExplain = false;
       const choices = new Map();
       const dialogTriggers = new Map();
       function node(tag, text, className) {
@@ -297,7 +299,7 @@
         const dialog = $(id), heading = dialog.querySelector("h2");
         heading.tabIndex = -1; dialog.showModal(); heading.focus();
       }
-      ["handoff", "comparison", "planning"].forEach(id => $(id).addEventListener("close", () => {
+      ["handoff", "comparison", "planning", "retrieval-audit"].forEach(id => $(id).addEventListener("close", () => {
         const trigger = dialogTriggers.get(id); dialogTriggers.delete(id);
         queueMicrotask(() => {
           if (trigger?.isConnected && !trigger.disabled && consent.checked) trigger.focus();
@@ -320,6 +322,7 @@
         $("find").textContent = busy ? "Finding ideas…" : "Explore support ideas";
         $("cancel-request").hidden = !busy;
         $("check-model").disabled = busy;
+        $("explain-retrieval").disabled = !consent.checked || busy || !canExplain;
         $("result-region").setAttribute("aria-busy", String(busy));
         results.querySelectorAll("button").forEach(button => button.disabled = busy || !consent.checked);
       }
@@ -354,6 +357,7 @@
       function invalidate(clearInput = false) {
         epoch++; if (pending) pending.abort(); pending = null; busy = false;
         nextOffset = null; previousOffset = null;
+        canExplain = false; $("retrieval-audit").close(); $("audit-candidates").replaceChildren(); $("audit-note").textContent = "";
         $("catalog-coverage").textContent = "";
         fieldError();
         if (clearInput) { barrier.value = ""; mode.value = "any"; $("result-limit").value = "3"; $("category").value = ""; $("catalog-sort").value = "id"; choices.clear(); showChoices(); $("model-state").textContent = "Readiness not checked. This check sends no barrier description and needs no personal data."; }
@@ -593,6 +597,7 @@
         try {
           const data = await request("/api/match", {consent: true, text: barrier.value, mode: mode.value, limit: Number($("result-limit").value)});
           if (generation !== epoch || !consent.checked) return;
+          canExplain = true;
           $("result-count").textContent = `${data.results.length} demo ideas`;
           if (data.results.length) render(data.results);
           else noMatch(data);
@@ -617,6 +622,33 @@
       $("browse").addEventListener("click", () => browseCatalog());
       $("next-page").addEventListener("click", () => browseCatalog(nextOffset));
       $("previous-page").addEventListener("click", () => browseCatalog(previousOffset));
+      $("explain-retrieval").addEventListener("click", async () => {
+        if (!consent.checked || busy || !canExplain) return;
+        const generation = epoch; busy = true; sync();
+        try {
+          const data = await request("/api/explain", {consent: true, text: barrier.value, mode: mode.value, limit: Number($("result-limit").value)});
+          if (generation !== epoch || !consent.checked) return;
+          const reasons = {
+            within_review_limit: "Meets the fixed similarity threshold and fits the selected review-list size.",
+            beyond_review_limit: "Meets the threshold, but falls beyond the review-list size you chose.",
+            format_excluded: "Not in your selected fictional format, regardless of its similarity.",
+            below_threshold: "Below the fixed similarity threshold; this is not a denial of support."
+          };
+          $("audit-note").textContent = `Threshold ${data.threshold}, review limit ${data.review_limit}. ${data.note}`;
+          $("audit-candidates").replaceChildren(...data.candidates.map(item => {
+            const li = node("li");
+            li.append(node("strong", item.title), node("p", `Cosine ${item.score.toFixed(6)}; ${item.shared_term_count} shared catalog terms. Not a probability.`, "score"), node("p", reasons[item.reason]));
+            return li;
+          }));
+          if (data.omitted_candidates) $("audit-candidates").append(node("li", `${data.omitted_candidates} additional catalog candidates omitted by the bounded trace.`));
+          openDialog("retrieval-audit", $("explain-retrieval"));
+        } catch (error) {
+          if (generation === epoch && error.name !== "AbortError") message("Retrieval explanation unavailable. Check the local model and try again.", true);
+        } finally {
+          if (generation === epoch) { busy = false; pending = null; sync(); }
+        }
+      });
+      $("close-audit").addEventListener("click", () => $("retrieval-audit").close());
       document.querySelectorAll("[data-preset]").forEach(button => button.addEventListener("click", () => {
         if (!consent.checked) return;
         invalidate(); barrier.value = button.dataset.preset; barrier.focus();

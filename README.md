@@ -237,6 +237,11 @@ fixed threshold or beyond the chosen review limit. CLI input is anonymous stdin.
 The trace is bounded to twelve candidates, returns no original text/unknown terms,
 and uses full precision for decisions even when displayed scores round to the
 threshold. It is retrieval debugging, never an eligibility rationale.
+After a match or no-match response, “Explain current retrieval limits” opens the
+bounded candidate trace in an accessible dialog with plain-language reasons.
+Editing input/preferences invalidates the explanation and withdrawal clears it.
+Catalog-only browsing/related descriptions do not enable this action against
+stale barrier text. Dialog height is bounded for keyboard use on smaller screens.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
