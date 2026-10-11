@@ -36,6 +36,9 @@ These are synthetic editorial annotation groups, never child/family profiles.
 `audit-pairs` inventories compound synthetic co-labels and whether both resources
 were retrieved together. Untested mathematical catalog pairs have a bounded
 preview; this is not family co-occurrence analysis, and not every pair is meaningful.
+`evaluate-cutoffs` compares review-list sizes one through six at the unchanged
+threshold, reporting hit, multi-label recall, returned precision and list burden.
+It does not tune a threshold on labels or claim real service effectiveness.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

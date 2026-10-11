@@ -923,6 +923,21 @@ class CLITests(unittest.TestCase):
                          len(report["tested_pairs"]) + report["untested_pair_count"])
         self.assertLessEqual(len(report["untested_pair_preview"]), 20)
 
+    def test_cutoff_diagnostics_preserve_threshold_and_distinguish_hit_from_multilabel_recall(self):
+        result = self.run_cli("evaluate-cutoffs")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        ordinary = evaluate(Retriever(load_catalog()).fit())
+        self.assertEqual(report["threshold"], ordinary["threshold"])
+        first = report["profiles"][0]["groups"]["queries"]
+        self.assertEqual(first["hit_at_limit"], ordinary["top1_hit_rate"])
+        self.assertGreaterEqual(first["hit_at_limit"], first["mean_recall_at_limit"])
+        for group in ("queries", "challenge_queries"):
+            recalls = [profile["groups"][group]["mean_recall_at_limit"] for profile in report["profiles"]]
+            self.assertEqual(recalls, sorted(recalls))
+            self.assertTrue(all(profile["groups"][group]["mean_options"] <= profile["limit"]
+                                for profile in report["profiles"]))
+
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))

@@ -6,7 +6,7 @@ import sys
 from .model import Retriever, audit_catalog, evaluate, evaluate_baselines, evaluate_formats, load_catalog
 from .reporting import compare_evaluation, save_evaluation
 from .artifacts import check_artifact
-from .diagnostics import cardinality_report, explain_case, pair_report, vocabulary_report
+from .diagnostics import cardinality_report, cutoff_report, explain_case, pair_report, vocabulary_report
 from .server import create_server
 from .service import RequestError, browse, compare, explain, match, plan, related, resource_detail
 
@@ -28,6 +28,7 @@ def main():
     commands.add_parser("evaluate-vocabulary", help="Audit tokenizer coverage with explicit zero-usable denominators")
     commands.add_parser("evaluate-cardinality", help="Compare single and compound synthetic label slices")
     commands.add_parser("audit-pairs", help="Audit compound synthetic labels without family co-occurrence claims")
+    commands.add_parser("evaluate-cutoffs", help="Compare bounded review-list sizes at the unchanged threshold")
     inspect = commands.add_parser("inspect", help="Describe the fitted catalog or validate a saved artifact without queries")
     inspect.add_argument("--model", help="Validate this artifact by exact deterministic refit")
     check = commands.add_parser("check-artifact", help="Classify compatibility failures without echoing artifact contents")
@@ -91,6 +92,8 @@ def main():
             print(json.dumps(cardinality_report(model), indent=2))
         elif args.command == "audit-pairs":
             print(json.dumps(pair_report(model), indent=2))
+        elif args.command == "evaluate-cutoffs":
+            print(json.dumps(cutoff_report(model), indent=2))
         elif args.command == "compare-evaluation":
             print(json.dumps(compare_evaluation(model, args.snapshot), indent=2))
         elif args.command == "inspect":

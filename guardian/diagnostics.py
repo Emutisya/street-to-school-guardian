@@ -82,3 +82,28 @@ def pair_report(model):
         "omitted_untested_pairs": max(0, len(untested) - 20),
         "note": "Synthetic editorial co-label audit, not family co-occurrence data. Not every mathematical pair is meaningful or requires a benchmark case."
     }
+
+
+def cutoff_report(model):
+    benchmark = evaluate(model)
+    ranked = {row["case_id"]: [item["id"] for item in model.rank(row["text"], limit=6)]
+              for row in benchmark["cases"]}
+    profiles = []
+    for limit in range(1, 7):
+        groups = {}
+        for group in ("queries", "challenge_queries"):
+            rows = [row for row in benchmark["cases"] if row["group"] == group]
+            ids = [ranked[row["case_id"]][:limit] for row in rows]
+            hits = [len(set(found) & set(row["relevant"])) for row, found in zip(rows, ids)]
+            groups[group] = {
+                "queries": len(rows), "hit_at_limit": round(sum(hit > 0 for hit in hits) / len(rows), 6),
+                "mean_recall_at_limit": round(sum(hit / len(row["relevant"]) for row, hit in zip(rows, hits)) / len(rows), 6),
+                "mean_precision_returned": round(sum(hit / len(found) if found else 0 for hit, found in zip(hits, ids)) / len(rows), 6),
+                "mean_options": round(sum(len(found) for found in ids) / len(rows), 6)
+            }
+        negatives = [row for row in benchmark["cases"] if row["group"] == "unmatched_queries"]
+        profiles.append({"limit": limit, "groups": groups,
+                         "unmatched_rejection_rate": round(sum(not ranked[row["case_id"]][:limit] for row in negatives) / len(negatives), 6)})
+    return {"catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
+            "threshold": benchmark["threshold"], "profiles": profiles,
+            "note": "Fixed-threshold synthetic review-list diagnostics. This does not select a threshold, optimize on labels or measure real service usefulness."}
