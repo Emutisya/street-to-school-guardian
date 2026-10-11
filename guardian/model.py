@@ -374,3 +374,46 @@ def audit_catalog(model):
         "omitted_unexercised_terms": max(0, len(unused) - 50),
         "note": "Editorial synthetic catalog audit, not data about people. Identical vectors cannot be distinguished by this retriever; no resources are automatically merged."
     }
+
+
+def evaluate_baselines(model):
+    benchmark = evaluate(model)
+    document_words = {row["id"]: set(tokens(row["description"])) for row in model.catalog}
+    methods = {"tfidf": [], "lexical_overlap": [], "always_abstain": []}
+    for case in benchmark["cases"]:
+        query = set(tokens(case["text"]))
+        overlap = sorted(((len(query & words), rid) for rid, words in document_words.items()),
+                         key=lambda item: (-item[0], item[1]))
+        ranks = {
+            "tfidf": case["ranked"],
+            "lexical_overlap": [rid for count, rid in overlap if count > 0][:3],
+            "always_abstain": []
+        }
+        for name, ids in ranks.items():
+            relevant = set(case["relevant"])
+            methods[name].append({
+                "case_id": case["case_id"], "group": case["group"], "ranked": ids,
+                "top1_hit": bool(ids and ids[0] in relevant) if relevant else None,
+                "recall_at_3": len(relevant & set(ids)) / len(relevant) if relevant else None,
+                "reciprocal_rank": next((1 / (index + 1) for index, rid in enumerate(ids)
+                                        if rid in relevant), 0) if relevant else None
+            })
+    reports = {}
+    for name, cases in methods.items():
+        metrics = {}
+        for group in ("queries", "challenge_queries"):
+            rows = [row for row in cases if row["group"] == group]
+            metrics[group] = {
+                "queries": len(rows), "coverage": round(sum(bool(row["ranked"]) for row in rows) / len(rows), 6),
+                "top1_hit_rate": round(sum(row["top1_hit"] for row in rows) / len(rows), 6),
+                "mean_recall_at_3": round(sum(row["recall_at_3"] for row in rows) / len(rows), 6),
+                "mrr_at_3": round(sum(row["reciprocal_rank"] for row in rows) / len(rows), 6)
+            }
+        negatives = [row for row in cases if row["group"] == "unmatched_queries"]
+        reports[name] = {"metrics": metrics, "cases": cases,
+                         "unmatched_rejection_rate": round(sum(not row["ranked"] for row in negatives) / len(negatives), 6)}
+    return {
+        "catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
+        "methods": reports,
+        "note": "Fixed synthetic comparison. Lexical overlap counts distinct shared tokenizer words, has no fitted weights or tuned threshold, breaks ties by ID. Always-abstain coverage must accompany rejection rate. No field-effectiveness claim."
+    }

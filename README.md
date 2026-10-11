@@ -191,6 +191,12 @@ Anonymous text gates also reject Unicode directional/format controls, lone
 surrogates and non-whitespace control characters before tokenization. Plain tabs
 and line breaks remain usable. Error messages explain what to remove without
 echoing the hidden input; client and server apply the same control categories.
+`python -m guardian evaluate-baselines` compares fixed TF-IDF retrieval against
+distinct-word lexical overlap and always-abstain methods on the same synthetic
+labels. Lexical overlap has no fitted weights or tuned threshold; ties use catalog
+ID order. Coverage and labeled recall accompany negative rejection so the
+always-abstain method cannot look useful solely because it rejects all negatives.
+No method is trained or tuned on these evaluation labels.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

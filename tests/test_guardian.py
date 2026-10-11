@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from guardian.model import DATA_DIR, Retriever, audit_catalog, evaluate, evaluate_formats, load_catalog, tokens
+from guardian.model import DATA_DIR, Retriever, audit_catalog, evaluate, evaluate_baselines, evaluate_formats, load_catalog, tokens
 from guardian.server import create_server
 from guardian.reporting import compare_evaluation, save_evaluation
 from guardian.service import RequestError, browse, compare, handoff, match, plan, related
@@ -336,6 +336,23 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(report["exercised_terms"] + report["unexercised_term_count"], report["vocabulary_terms"])
         self.assertLessEqual(len(report["unexercised_terms"]), 50)
         self.assertEqual(report, audit_catalog(Retriever(catalog).fit()))
+
+    def test_baseline_evaluation_uses_fixed_labels_and_does_not_confuse_abstention_with_success(self):
+        report = evaluate_baselines(self.model)
+        lexical = report["methods"]["lexical_overlap"]
+        first = lexical["cases"][0]
+        self.assertEqual(first["ranked"][0], "learning-kit")
+        abstain = report["methods"]["always_abstain"]
+        self.assertEqual(abstain["metrics"]["queries"]["coverage"], 0)
+        self.assertEqual(abstain["metrics"]["queries"]["mean_recall_at_3"], 0)
+        self.assertEqual(abstain["unmatched_rejection_rate"], 1)
+        ordinary = evaluate(self.model)
+        self.assertEqual(report["methods"]["tfidf"]["metrics"]["queries"]["mean_recall_at_3"],
+                         ordinary["mean_recall_at_3"])
+        with patch.object(self.model, "rank", return_value=[]):
+            refuted = evaluate_baselines(self.model)
+        self.assertEqual(refuted["methods"]["tfidf"], refuted["methods"]["always_abstain"])
+        self.assertEqual(refuted["methods"]["lexical_overlap"], lexical)
 
     def test_token_equivalent_queries_cannot_inflate_evaluation(self):
         data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
@@ -689,6 +706,11 @@ class CLITests(unittest.TestCase):
         run = self.run_cli("audit-catalog")
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(json.loads(run.stdout), audit_catalog(Retriever(load_catalog()).fit()))
+
+    def test_cli_baseline_evaluation_is_reproducible(self):
+        run = self.run_cli("evaluate-baselines")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertEqual(json.loads(run.stdout), evaluate_baselines(Retriever(load_catalog()).fit()))
 
     def test_evaluation_snapshot_is_atomic_repository_local_and_cli_reproducible(self):
         path = ROOT / "models" / "snapshot-test.json"
