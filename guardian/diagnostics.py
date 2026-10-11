@@ -107,3 +107,24 @@ def cutoff_report(model):
     return {"catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
             "threshold": benchmark["threshold"], "profiles": profiles,
             "note": "Fixed-threshold synthetic review-list diagnostics. This does not select a threshold, optimize on labels or measure real service usefulness."}
+
+
+def resource_balance_report(model):
+    benchmark = evaluate(model)
+    rows = benchmark["resource_coverage"]
+    def rates(resources):
+        labeled = [row for row in resources if row["labeled_queries"]]
+        total = sum(row["labeled_queries"] for row in labeled)
+        hits = sum(row["retrieved_at_3"] for row in labeled)
+        return {"labeled_resources": len(labeled), "unlabeled_resources": len(resources) - len(labeled),
+                "labels": total, "retrieved_labels": hits,
+                "micro_retrieval_rate": round(hits / total, 6) if total else None,
+                "macro_resource_retrieval_rate": round(sum(row["retrieved_at_3"] / row["labeled_queries"] for row in labeled) / len(labeled), 6)
+                if labeled else None}
+    return {
+        "catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
+        "overall": rates(rows),
+        "categories": {category: rates([row for row in rows if row["category"] == category])
+                       for category in sorted({row["category"] for row in rows})},
+        "note": "Synthetic standard and challenge label balance. Macro weights labeled resources equally; micro weights annotations. Unlabeled resources are excluded, not scored. No fairness or population-representativeness claim."
+    }

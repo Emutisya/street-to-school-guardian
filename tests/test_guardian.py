@@ -938,6 +938,22 @@ class CLITests(unittest.TestCase):
             self.assertTrue(all(profile["groups"][group]["mean_options"] <= profile["limit"]
                                 for profile in report["profiles"]))
 
+    def test_resource_balance_diagnostics_expose_annotation_weights_and_unlabeled_categories(self):
+        from guardian.diagnostics import resource_balance_report
+        model = Retriever(load_catalog()).fit()
+        rows = evaluate(model)["resource_coverage"]
+        report = resource_balance_report(model)
+        self.assertAlmostEqual(report["overall"]["micro_retrieval_rate"],
+                               sum(row["retrieved_at_3"] for row in rows) / sum(row["labeled_queries"] for row in rows), places=6)
+        data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
+        for row in data["queries"] + data["challenge_queries"]:
+            row["relevant"] = ["meal"]
+        with patch("guardian.model.json.loads", return_value=data):
+            sparse = resource_balance_report(model)
+        self.assertEqual(sparse["overall"]["unlabeled_resources"], 11)
+        self.assertIsNone(sparse["categories"]["Travel"]["micro_retrieval_rate"])
+        self.assertEqual(sparse["overall"]["micro_retrieval_rate"], sparse["overall"]["macro_resource_retrieval_rate"])
+
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))

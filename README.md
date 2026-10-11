@@ -39,6 +39,10 @@ preview; this is not family co-occurrence analysis, and not every pair is meanin
 `evaluate-cutoffs` compares review-list sizes one through six at the unchanged
 threshold, reporting hit, multi-label recall, returned precision and list burden.
 It does not tune a threshold on labels or claim real service effectiveness.
+`evaluate-resource-balance` separates annotation-weighted micro retrieval from
+equal-resource macro retrieval, including category breakdowns. Unlabeled resources
+are excluded and reported explicitly. These editorial weights do not establish
+population representativeness or fairness.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It
