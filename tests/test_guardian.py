@@ -224,6 +224,20 @@ class ModelTests(unittest.TestCase):
         self.assertTrue(all(row["retrieval_rate"] is None for row in sparse["resource_coverage"]
                             if row["resource_id"] != "meal"))
 
+    def test_challenge_metrics_distinguish_hit_recall_and_answered_coverage(self):
+        report = evaluate(self.model)
+        for name, group in (("standard", "queries"), ("challenge", "challenge_queries")):
+            rows = [row for row in report["cases"] if row["group"] == group]
+            metrics = report["group_metrics"][name]
+            self.assertEqual(metrics["answered_queries"], sum(not row["abstained"] for row in rows))
+            self.assertAlmostEqual(metrics["mean_recall_at_3"], sum(row["recall_at_3"] for row in rows) / len(rows), places=6)
+            self.assertGreaterEqual(metrics["hit_at_3"], metrics["mean_recall_at_3"])
+            self.assertGreaterEqual(metrics["answered_top1_hit_rate"], metrics["top1_hit_rate"])
+        with patch.object(self.model, "rank", return_value=[]):
+            abstained = evaluate(self.model)
+        self.assertEqual(abstained["group_metrics"]["challenge"]["coverage"], 0)
+        self.assertIsNone(abstained["group_metrics"]["challenge"]["answered_top1_hit_rate"])
+
     def test_token_equivalent_queries_cannot_inflate_evaluation(self):
         data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
         duplicate = copy.deepcopy(data["queries"][0])

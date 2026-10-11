@@ -78,6 +78,11 @@ Evaluation reports include per-resource standard/challenge label counts and
 retrieval rates, plus an explicit list of unlabeled catalog resources. Unlabeled
 resources get `null`, not a perfect or zero accuracy value. Coverage measures
 editorial synthetic benchmark coverage, never actual service quality.
+`group_metrics` reports the same hit, recall, reciprocal-rank and coverage metrics
+for standard and challenge queries. Hit-at-three asks whether *any* label was
+retrieved; recall asks what fraction of labels was retrieved. Answered-only top-one
+accuracy is shown alongside coverage and is `null` when all queries abstain, so
+abstention cannot silently inflate an accuracy claim.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

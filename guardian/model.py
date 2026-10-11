@@ -230,6 +230,19 @@ def evaluate(model):
             "retrieved_at_3": hits, "labeled_queries": len(labeled),
             "retrieval_rate": round(hits / len(labeled), 6) if labeled else None
         })
+    group_metrics = {}
+    for name, group in (("standard", positive), ("challenge", challenges)):
+        answered = [row for row in group if not row["abstained"]]
+        group_metrics[name] = {
+            "queries": len(group), "answered_queries": len(answered),
+            "coverage": round(len(answered) / len(group), 6),
+            "top1_hit_rate": round(sum(row["top1_hit"] for row in group) / len(group), 6),
+            "hit_at_3": round(sum(row["recall_at_3"] > 0 for row in group) / len(group), 6),
+            "mean_recall_at_3": round(sum(row["recall_at_3"] for row in group) / len(group), 6),
+            "mrr_at_3": round(sum(row["reciprocal_rank"] for row in group) / len(group), 6),
+            "answered_top1_hit_rate": round(sum(row["top1_hit"] for row in answered) / len(answered), 6)
+                if answered else None
+        }
     return {
         "positive_queries": len(positive), "unmatched_queries": len(negatives),
         "top1_hit_rate": round(sum(row["top1_hit"] for row in positive) / len(positive), 6),
@@ -243,5 +256,6 @@ def evaluate(model):
         "benchmark_sha256": fingerprint(evaluation), "cases": cases,
         "resource_coverage": coverage,
         "unlabeled_resources": [row["resource_id"] for row in coverage if not row["labeled_queries"]],
+        "group_metrics": group_metrics,
         "note": "Small synthetic editorial benchmark, not field accuracy or impact."
     }
