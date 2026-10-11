@@ -214,6 +214,20 @@ class ModelTests(unittest.TestCase):
             with patch("guardian.model.json.loads", return_value=data), self.assertRaises(ValueError):
                 evaluate(self.model)
 
+    def test_benchmark_schema_rejects_contact_markers_and_private_fields_before_retrieval(self):
+        original = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
+        for mutate in (
+            lambda data: data["queries"][0].update(text="contact@example.invalid"),
+            lambda data: data["unmatched_queries"].append("Call 12345"),
+            lambda data: data["queries"][0].update(private_notes="not allowed"),
+            lambda data: data.update(family_details="not allowed"),
+        ):
+            data = copy.deepcopy(original); mutate(data)
+            with patch("guardian.model.json.loads", return_value=data), patch.object(self.model, "rank") as rank:
+                with self.assertRaises(ValueError):
+                    evaluate(self.model)
+                rank.assert_not_called()
+
     def test_evaluation_cases_expose_failures_and_track_benchmark_provenance(self):
         report = evaluate(self.model)
         self.assertEqual(report, evaluate(self.model))

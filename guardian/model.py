@@ -11,6 +11,8 @@ import re
 import tempfile
 import unicodedata
 
+from .service import validate
+
 DATA_DIR = Path(__file__).parent / "data"
 MIN_SCORE = 0.12
 STOPWORDS = frozenset(
@@ -207,6 +209,8 @@ def evaluate(model):
     evaluation = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
     if not isinstance(evaluation, dict):
         raise ValueError("Evaluation must be an object of query groups.")
+    if set(evaluation) != {"description", "queries", "challenge_queries", "unmatched_queries"}:
+        raise ValueError("Use only the bundled synthetic evaluation schema.")
     for group in ("queries", "challenge_queries", "unmatched_queries"):
         if not isinstance(evaluation.get(group), list) or not evaluation[group]:
             raise ValueError(f"Evaluation {group} must contain at least one query.")
@@ -214,6 +218,9 @@ def evaluate(model):
     for item in evaluation["queries"] + evaluation["challenge_queries"]:
         if not isinstance(item, dict) or not isinstance(item.get("text"), str) or not item["text"].strip():
             raise ValueError("Evaluation queries must contain nonempty text.")
+        if set(item) != {"text", "relevant"}:
+            raise ValueError("Evaluation cases must contain only synthetic text and catalog labels.")
+        validate({"consent": True, "text": item["text"]})
         relevant = item.get("relevant")
         if (not isinstance(relevant, list) or not relevant
                 or any(not isinstance(identifier, str) for identifier in relevant)
@@ -221,6 +228,8 @@ def evaluate(model):
             raise ValueError("Evaluation relevance labels must be unique catalog resource IDs.")
     if any(not isinstance(text, str) or not text.strip() for text in evaluation["unmatched_queries"]):
         raise ValueError("Unmatched evaluation queries must be nonempty text.")
+    for text in evaluation["unmatched_queries"]:
+        validate({"consent": True, "text": text})
     training_texts = {r["description"].strip().lower() for r in model.catalog}
     test_texts = [q["text"].strip().lower() for q in evaluation["queries"]]
     test_texts += [q["text"].strip().lower() for q in evaluation["challenge_queries"]]
