@@ -97,9 +97,13 @@ class Retriever:
             score = sum(contributions.values())
             if score < MIN_SCORE:
                 continue
-            terms = sorted(contributions, key=lambda w: (-contributions[w], w))[:5]
+            ordered = sorted(contributions, key=lambda w: (-contributions[w], w))
+            terms = ordered[:5]
             results.append((score, {
                 **deepcopy(resource), "score": round(score, 6), "matched_terms": terms,
+                "term_contributions": [{"term": term, "contribution": round(contributions[term], 12)}
+                                       for term in ordered],
+                "explanation_term_count": len(ordered),
                 "explanation": "Shared description terms: " + ", ".join(terms)
                     + ". This similarity is not a probability or an assessment of a person."
             }))

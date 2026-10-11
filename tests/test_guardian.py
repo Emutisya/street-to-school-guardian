@@ -44,6 +44,18 @@ class ModelTests(unittest.TestCase):
             self.assertIn(word, tokens(item["description"]))
         self.assertIn("not a probability", item["explanation"])
 
+    def test_complete_contributions_account_for_score_beyond_five_terms(self):
+        result = self.model.rank(self.catalog[1]["description"])[0]
+        self.assertGreater(result["explanation_term_count"], 5)
+        self.assertEqual(len(result["matched_terms"]), 5)
+        self.assertEqual(len(result["term_contributions"]), result["explanation_term_count"])
+        self.assertAlmostEqual(sum(part["contribution"] for part in result["term_contributions"]),
+                               result["score"], places=6)
+        for part in result["term_contributions"]:
+            self.assertIn(part["term"], tokens(result["description"]))
+        self.assertEqual(result["term_contributions"],
+                         sorted(result["term_contributions"], key=lambda part: (-part["contribution"], part["term"])))
+
     def test_display_rounding_does_not_change_retrieval_order(self):
         resources = copy.deepcopy(self.catalog[:2])
         resources[0]["id"], resources[1]["id"] = "a", "z"

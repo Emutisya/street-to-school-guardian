@@ -399,6 +399,11 @@
             fill.style.width = `${Math.max(0, Math.min(1, item.score)) * 100}%`;
             scoreBar.append(fill);
             explanation.append(node("div", `Cosine similarity ${item.score.toFixed(3)} · not a probability`, "score"), scoreBar);
+            const details = node("details"), list = node("ul");
+            details.append(node("summary", `All ${item.explanation_term_count} shared-term contributions`));
+            item.term_contributions.forEach(part => list.append(node("li", `${part.term}: ${part.contribution.toFixed(6)} cosine contribution`)));
+            details.append(list, node("p", "All shared terms are shown. Display rounding may leave a small sum difference; ranking uses full precision."));
+            explanation.append(details);
           } else explanation.append(node("p", "Catalog browsing only. Not ranked against your description."));
           const button = node("button", "Preview human handoff");
           button.setAttribute("aria-label", `Preview human handoff for ${item.title}`);

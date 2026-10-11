@@ -128,6 +128,11 @@ does not anonymize names or make private input safe.
 catalog retriever is fitted and returns current catalog provenance. An unfitted
 model returns HTTP 503 with a fit/reload recovery instruction even when health
 is HTTP 200. Readiness does not imply any real support is available.
+Ranked cards have an expandable complete shared-term contribution trace. The short
+explanation still highlights at most five terms, but the trace accounts for all
+shared terms in the cosine score, rounded only for display. These are catalog
+similarity contributions, not causal factors, probabilities or personal traits;
+unknown input words are never listed.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

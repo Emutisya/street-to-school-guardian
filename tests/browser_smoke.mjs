@@ -88,6 +88,9 @@ try {
   await run("document.getElementById('consent').click(); document.querySelector('[data-preset]').click(); document.getElementById('find').click()");
   await until(() => run("document.querySelectorAll('.resource').length > 0"), "ranked supports");
   assert.ok((await run("document.getElementById('results').textContent")).includes("School journey support desk"));
+  assert.equal(await run("document.querySelector('.resource details summary').textContent.startsWith('All ')"), true);
+  await run("document.querySelector('.resource details summary').click()");
+  assert.equal(await run("document.querySelector('.resource details').open"), true, "Complete explanation is expandable");
   const lightShot = await rpc("Page.captureScreenshot", {format: "png", captureBeyondViewport: true});
   await writeFile(path.join(artifacts, "desktop-light.png"), Buffer.from(lightShot.data, "base64"));
   await run("document.querySelector('.resource button').click()");
