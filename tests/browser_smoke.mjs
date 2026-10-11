@@ -84,7 +84,14 @@ try {
   await waitPage();
   assert.equal(await run("document.documentElement.dataset.theme"), "light");
   assert.equal(await run("document.getElementById('find').disabled && document.getElementById('barrier').disabled"), true);
+  await run("document.getElementById('check-model').click()");
+  await until(() => run("document.getElementById('model-state').textContent.startsWith('Ready at last check')"), "local readiness without description");
   assert.equal(urls.filter(url => url.includes("/api/")).length, 0, "No inference before consent");
+  await run(`window.readyFetch = window.fetch; window.fetch = async (...args) => args[0] === "/ready"
+    ? new Response(JSON.stringify({status:"unavailable"}), {status:503,headers:{"Content-Type":"application/json"}})
+    : window.readyFetch(...args); document.getElementById("check-model").click();`);
+  await until(() => run("document.getElementById('model-state').textContent.startsWith('Local model not ready')"), "readiness recovery");
+  await run("window.fetch = window.readyFetch");
   await run("document.getElementById('consent').click(); document.querySelector('[data-preset]').click(); document.getElementById('find').click()");
   await until(() => run("document.querySelectorAll('.resource').length > 0"), "ranked supports");
   assert.ok((await run("document.getElementById('results').textContent")).includes("School journey support desk"));

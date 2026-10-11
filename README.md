@@ -227,6 +227,10 @@ If local model inference becomes unavailable, API requests return HTTP 503 with
 `model_unavailable` and a fit/reload/readiness recovery path instead of disconnecting
 with a traceback. Consent remains authoritative before inference. Metadata-only
 browsing and server health can still work; this is not a denial of support.
+The dashboard has a description-free readiness check with a last-check catalog
+fingerprint and a concrete local-server recovery message. It is usable before
+consent because it requests only static model metadata, not a barrier. No polling,
+telemetry or storage is added; reset clears its displayed state.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
