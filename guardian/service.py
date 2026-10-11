@@ -1,5 +1,6 @@
 """Validation and consent gates shared by HTTP and CLI."""
 
+from copy import deepcopy
 import re
 
 
@@ -7,6 +8,43 @@ class RequestError(ValueError):
     def __init__(self, message, status=400):
         super().__init__(message)
         self.status = status
+
+
+def consent_fields(payload, allowed):
+    if not isinstance(payload, dict):
+        raise RequestError("Send a JSON object.")
+    if payload.get("consent") is not True:
+        raise RequestError("Consent is required before processing or simulating a handoff.", 403)
+    if set(payload) - allowed - {"consent"}:
+        raise RequestError("Unexpected fields. Do not send personal details.")
+
+
+def browse(model, payload):
+    """Browse fictional metadata, never a person or a free-text search."""
+    consent_fields(payload, {"mode", "category", "offset", "limit"})
+    mode = payload.get("mode", "any")
+    if not isinstance(mode, str) or mode not in {"any", "offline", "online"}:
+        raise RequestError("Mode must be any, offline or online.")
+    categories = sorted({row["category"] for row in model.catalog})
+    category = payload.get("category")
+    if category is not None and (not isinstance(category, str) or category not in categories):
+        raise RequestError("Choose a category from the fictional catalog.")
+    offset, limit = payload.get("offset", 0), payload.get("limit", 6)
+    if type(offset) is not int or offset < 0 or offset > len(model.catalog):
+        raise RequestError("Offset must be a catalog position.")
+    if type(limit) is not int or not 1 <= limit <= 12:
+        raise RequestError("Limit must be an integer from 1 through 12.")
+    rows = sorted((row for row in model.catalog
+                   if (mode == "any" or mode in row["modes"])
+                   and (category is None or row["category"] == category)), key=lambda row: row["id"])
+    end = offset + limit
+    return {
+        "status": "catalog_only", "results": deepcopy(rows[offset:end]),
+        "total": len(rows), "offset": offset,
+        "next_offset": end if end < len(rows) else None,
+        "categories": categories,
+        "message": "Fictional catalog browsing, not recommendations or verified availability. No description is processed."
+    }
 
 
 def validate(payload, action="match"):

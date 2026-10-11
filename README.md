@@ -51,6 +51,12 @@ or measured educational outcomes. No partner or service availability is claimed.
 
 ## What works today
 
+Catalog metadata can be browsed without a barrier description using consent-gated
+`POST /api/browse`: `{"consent":true,"mode":"online","limit":6,"offset":0}`.
+An optional `category` must match a returned category exactly. Results are stable
+by resource ID, copied from fictional metadata, and paginated with `next_offset`.
+This is browsing, not a relevance ranking, entitlement or availability check.
+
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
 - A trainable, dependency-free TF-IDF cosine retriever fitted on 12 synthetic support descriptions.

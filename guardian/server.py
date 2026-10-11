@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from .service import RequestError, handoff, match
+from .service import RequestError, browse, handoff, match
 
 HTML = Path(__file__).parent / "web" / "index.html"
 MAX_BODY = 4096
@@ -80,7 +80,8 @@ def create_server(model, port=8765):
         def do_POST(self):
             try:
                 self.guard()
-                if self.path not in {"/api/match", "/api/handoff"}:
+                operations = {"/api/match": match, "/api/handoff": handoff, "/api/browse": browse}
+                if self.path not in operations:
                     raise RequestError("Route not found.", 404)
                 if self.headers.get_content_type() != "application/json":
                     raise RequestError("Use Content-Type: application/json.", 415)
@@ -103,7 +104,7 @@ def create_server(model, port=8765):
                     payload = json.loads(raw.decode("utf-8"), object_pairs_hook=unique_fields)
                 except (ValueError, UnicodeDecodeError, RecursionError):
                     raise RequestError("Send valid UTF-8 JSON.") from None
-                result = match(model, payload) if self.path == "/api/match" else handoff(model, payload)
+                result = operations[self.path](model, payload)
                 self.reply(200, result)
             except TimeoutError:
                 self.reply(408, {"error": "Request body timed out. Send a complete JSON request."})

@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from guardian.model import DATA_DIR, Retriever, evaluate, load_catalog, tokens
 from guardian.server import create_server
-from guardian.service import RequestError, handoff, match
+from guardian.service import RequestError, browse, handoff, match
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -264,6 +264,20 @@ class ConsentTests(unittest.TestCase):
         with self.assertRaises(RequestError):
             handoff(self.model, {"consent": True, "resource_id": "transport", "text": "bus fares"})
 
+    def test_catalog_browsing_is_bounded_filtered_and_independent(self):
+        first = browse(self.model, {"consent": True, "limit": 5})
+        second = browse(self.model, {"consent": True, "offset": first["next_offset"], "limit": 5})
+        self.assertFalse({r["id"] for r in first["results"]} & {r["id"] for r in second["results"]})
+        self.assertEqual(first["total"], 12)
+        first["results"][0]["modes"].clear()
+        filtered = browse(self.model, {"consent": True, "mode": "online", "category": "Travel"})
+        self.assertEqual([r["id"] for r in filtered["results"]], ["transport"])
+        self.assertEqual(browse(self.model, {"consent": True, "mode": "online", "category": "Food"})["total"], 0)
+        for fields in ({"consent": False}, {"limit": True}, {"limit": 13}, {"offset": -1},
+                       {"category": "missing"}, {"text": "not accepted"}):
+            with self.assertRaises(RequestError):
+                browse(self.model, {"consent": True, **fields})
+
 
 class HTTPTests(unittest.TestCase):
     @classmethod
@@ -319,6 +333,13 @@ class HTTPTests(unittest.TestCase):
         status, _, body = self.request("/api/handoff", {"consent": True, "resource_id": "transport"})
         self.assertEqual(status, 200)
         self.assertEqual(json.loads(body)["status"], "simulation_only")
+
+    def test_http_catalog_browsing_requires_consent(self):
+        self.assertEqual(self.request("/api/browse", {"consent": False})[0], 403)
+        status, headers, body = self.request("/api/browse", {"consent": True, "mode": "online", "limit": 2})
+        self.assertEqual(status, 200)
+        self.assertEqual(len(json.loads(body)["results"]), 2)
+        self.assertEqual(headers["Cache-Control"], "no-store")
 
     def test_http_no_match_and_input_errors(self):
         for raw in ('{"consent":false,"consent":true,"text":"bus fares"}',
