@@ -423,6 +423,16 @@ class ConsentTests(unittest.TestCase):
         with self.assertRaises(RequestError):
             match(self.model, {"consent": True, "text": "bus fares", "child_name": "Not accepted"})
 
+    def test_review_limit_changes_list_size_without_threshold_or_order_changes(self):
+        payload = {"consent": True, "text": "Bus fares notebooks internet paper reading audio"}
+        many = match(self.model, {**payload, "limit": 6})
+        one = match(self.model, {**payload, "limit": 1})
+        self.assertEqual(one["results"], many["results"][:1])
+        self.assertEqual(one["diagnostics"], many["diagnostics"])
+        for limit in (True, 0, 7, 3.0, "3"):
+            with self.assertRaises(RequestError):
+                match(self.model, {**payload, "limit": limit})
+
     def test_handoff_simulation_does_not_echo_barriers(self):
         result = handoff(self.model, {"consent": True, "resource_id": "transport"})
         self.assertEqual(result["status"], "simulation_only")
@@ -655,6 +665,12 @@ class CLITests(unittest.TestCase):
         self.assertEqual(json.loads(allowed.stdout)["results"][0]["id"], "transport")
         for text in ["", "a@example.invalid"]:
             self.assertEqual(self.run_cli("recommend", "--consent", text=text).returncode, 2)
+
+    def test_cli_recommendation_review_limit_is_bounded(self):
+        result = self.run_cli("recommend", "--consent", "--limit", "1", text="bus fares notebooks")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(len(json.loads(result.stdout)["results"]), 1)
+        self.assertEqual(self.run_cli("recommend", "--consent", "--limit", "7", text="bus fares").returncode, 2)
 
     def test_cli_browse_accepts_only_catalog_filters(self):
         self.assertEqual(self.run_cli("browse").returncode, 2)

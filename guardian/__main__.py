@@ -30,6 +30,7 @@ def main():
     recommend = commands.add_parser("recommend", help="Read an anonymous example from stdin, not shell history")
     recommend.add_argument("--consent", action="store_true")
     recommend.add_argument("--mode", choices=["any", "offline", "online"], default="any")
+    recommend.add_argument("--limit", type=int, default=3, help="Return one through six fictional ideas")
     catalog_command = commands.add_parser("browse", help="Browse fictional metadata without a barrier description")
     catalog_command.add_argument("--consent", action="store_true")
     catalog_command.add_argument("--mode", choices=["any", "offline", "online"], default="any")
@@ -84,7 +85,7 @@ def main():
             if not args.consent:
                 raise RequestError("Use --consent only after agreeing to process an anonymous description.", 403)
             text = sys.stdin.read(801)
-            print(json.dumps(match(model, {"text": text, "mode": args.mode, "consent": True}), indent=2))
+            print(json.dumps(match(model, {"text": text, "mode": args.mode, "limit": args.limit, "consent": True}), indent=2))
         else:
             try:
                 server = create_server(model, args.port)

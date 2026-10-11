@@ -117,7 +117,7 @@ def validate(payload, action="match"):
         raise RequestError("Send a JSON object.")
     if payload.get("consent") is not True:
         raise RequestError("Consent is required before processing or simulating a handoff.", 403)
-    allowed = {"consent", "resource_id"} if action == "handoff" else {"consent", "text", "mode"}
+    allowed = {"consent", "resource_id"} if action == "handoff" else {"consent", "text", "mode", "limit"}
     if set(payload) - allowed:
         raise RequestError("Unexpected fields. Do not send personal details.")
     if action == "handoff":
@@ -138,12 +138,15 @@ def validate(payload, action="match"):
     mode = payload.get("mode", "any")
     if not isinstance(mode, str) or mode not in {"any", "offline", "online"}:
         raise RequestError("Mode must be any, offline or online.")
+    limit = payload.get("limit", 3)
+    if type(limit) is not int or not 1 <= limit <= 6:
+        raise RequestError("Choose one through six fictional ideas.")
     return text.strip(), mode
 
 
 def match(model, payload):
     text, mode = validate(payload)
-    ranked = model.rank(text, mode)
+    ranked = model.rank(text, mode, payload.get("limit", 3))
     return {
         "results": ranked, "status": "matched" if ranked else "no_match",
         "diagnostics": model.diagnostics(text, mode),

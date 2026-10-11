@@ -205,6 +205,9 @@
         <label class="field-label" for="mode">Preferred support format</label>
         <select id="mode" disabled><option value="any">Any demo format</option><option value="offline">Offline / in-person ideas</option><option value="online">Online ideas</option></select>
         <div class="field-help">This filters fictional formats, not availability or entitlement. Catalog descriptions are English-only.</div>
+        <label class="field-label" for="result-limit">Maximum ideas to review</label>
+        <select id="result-limit" disabled><option value="1">One idea at a time</option><option value="3" selected>Up to three ideas</option><option value="6">Up to six ideas</option></select>
+        <p class="field-help">Changes the review list size, not the matching threshold or support entitlement.</p>
         <div class="actions"><button class="primary" id="find" type="submit" disabled>Explore support ideas</button><button id="clear" type="button">Reset</button></div>
         <button id="cancel-request" type="button" hidden>Cancel pending local request</button>
         <h3>Browse without a description</h3>
@@ -294,7 +297,7 @@
         });
       }));
       function sync() {
-        [barrier, mode, ...document.querySelectorAll("[data-preset]")].forEach(el => el.disabled = !consent.checked);
+        [barrier, mode, $("result-limit"), ...document.querySelectorAll("[data-preset]")].forEach(el => el.disabled = !consent.checked);
         $("category").disabled = !consent.checked || busy;
         $("browse").disabled = !consent.checked || busy;
         $("next-page").disabled = !consent.checked || busy || nextOffset === null;
@@ -341,7 +344,7 @@
         nextOffset = null;
         $("catalog-coverage").textContent = "";
         fieldError();
-        if (clearInput) { barrier.value = ""; mode.value = "any"; $("category").value = ""; choices.clear(); showChoices(); }
+        if (clearInput) { barrier.value = ""; mode.value = "any"; $("result-limit").value = "3"; $("category").value = ""; choices.clear(); showChoices(); }
         $("comparison").close(); $("comparison-cards").replaceChildren();
         $("comparison-message").textContent = ""; $("shared-modes").textContent = "";
         $("planning").close(); $("plan-resources").replaceChildren(); $("plan-verification").replaceChildren();
@@ -557,7 +560,7 @@
         invalidate(); const generation = epoch; busy = true; sync();
         message("Matching against the fictional catalog on your computer…");
         try {
-          const data = await request("/api/match", {consent: true, text: barrier.value, mode: mode.value});
+          const data = await request("/api/match", {consent: true, text: barrier.value, mode: mode.value, limit: Number($("result-limit").value)});
           if (generation !== epoch || !consent.checked) return;
           $("result-count").textContent = `${data.results.length} demo ideas`;
           if (data.results.length) render(data.results);
@@ -577,6 +580,7 @@
       consent.addEventListener("change", () => invalidate(!consent.checked));
       barrier.addEventListener("input", () => invalidate());
       mode.addEventListener("change", () => invalidate());
+      $("result-limit").addEventListener("change", () => invalidate());
       $("category").addEventListener("change", () => invalidate());
       $("browse").addEventListener("click", () => browseCatalog());
       $("next-page").addEventListener("click", () => browseCatalog(nextOffset));

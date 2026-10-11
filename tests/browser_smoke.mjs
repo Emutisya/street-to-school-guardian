@@ -116,6 +116,8 @@ try {
   await run("document.getElementById('relax-format').click()");
   await until(() => run("document.querySelectorAll('.resource').length > 0"), "explicit any-format retry");
   assert.equal(await run("document.getElementById('mode').value"), "any");
+  await run("document.getElementById('result-limit').value = '1'; document.getElementById('result-limit').dispatchEvent(new Event('change')); document.getElementById('find').click()");
+  await until(() => run("document.querySelectorAll('.resource').length === 1"), "one-at-a-time review");
   const beforeRejected = urls.filter(url => url.includes("/api/match")).length;
   await run("document.getElementById('barrier').value = 'a@example.invalid'; document.getElementById('barrier').dispatchEvent(new Event('input')); document.getElementById('find').click()");
   await until(() => run("document.getElementById('status').dataset.error === 'true'"), "invalid input");
