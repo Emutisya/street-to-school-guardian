@@ -278,7 +278,7 @@
         if (!text.trim()) return "Describe a fictional general barrier without identifying anyone.";
         if ([...text].length > 800) return "Use at most 800 characters.";
         if (/[@\p{Decimal_Number}]|https?:\/\/|www\./iu.test(text)) return "Remove numbers, dates, coordinates, links and contact details. Use general words only.";
-        if (/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/u.test(text)) return "Remove control characters from the description.";
+        if (/[\p{Cf}\p{Cs}]|[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f]/u.test(text)) return "Remove hidden, directional or control characters from the description.";
         return "";
       }
       function openDialog(id, trigger) {

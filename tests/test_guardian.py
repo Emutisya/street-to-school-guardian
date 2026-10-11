@@ -390,6 +390,14 @@ class ConsentTests(unittest.TestCase):
             with self.assertRaises(RequestError):
                 match(self.model, payload)
 
+    def test_hidden_unicode_controls_are_rejected_without_echo_but_plain_whitespace_remains(self):
+        for text in ("bus\u200bfares", "bus\u202efares", "bus\ud800fares", "bus\x7ffares"):
+            with self.assertRaises(RequestError) as caught:
+                match(self.model, {"consent": True, "text": text})
+            self.assertNotIn(text, str(caught.exception))
+        result = match(self.model, {"consent": True, "text": "bus\tfares\n"})
+        self.assertEqual(result["results"][0]["id"], "transport")
+
     def test_invalid_preferences_and_unexpected_personal_fields(self):
         for mode in ["unknown", None, {}, [], 1]:
             with self.subTest(mode=mode):

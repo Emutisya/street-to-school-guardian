@@ -2,6 +2,7 @@
 
 from copy import deepcopy
 import re
+import unicodedata
 
 
 class RequestError(ValueError):
@@ -129,8 +130,8 @@ def validate(payload, action="match"):
         raise RequestError("Describe a barrier without identifying anyone.")
     if len(text) > 800:
         raise RequestError("Use at most 800 characters and no identifying details.")
-    if any(ord(char) < 32 and char not in "\n\r\t" for char in text):
-        raise RequestError("Remove control characters from the description.")
+    if any(unicodedata.category(char) in {"Cc", "Cf", "Cs"} and char not in "\n\r\t" for char in text):
+        raise RequestError("Remove hidden, directional or control characters from the description.")
     # A conservative backstop, not anonymization: names cannot reliably be detected.
     if re.search(r"[@\d]|https?://|www\.", text, re.IGNORECASE):
         raise RequestError("Remove numbers, dates, coordinates, links and contact details. Use general words only.")

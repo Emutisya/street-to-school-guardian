@@ -123,6 +123,9 @@ try {
   assert.equal(urls.filter(url => url.includes("/api/match")).length, beforeRejected, "Obvious identifiers rejected before transport");
   assert.equal(await run("document.getElementById('barrier').getAttribute('aria-invalid')"), "true");
   assert.equal(await run("document.activeElement.id"), "barrier");
+  await run("document.getElementById('barrier').value = 'bus\\u202efares'; document.getElementById('barrier').dispatchEvent(new Event('input')); document.getElementById('find').click()");
+  assert.ok((await run("document.getElementById('barrier-error').textContent")).includes("directional"));
+  assert.equal(urls.filter(url => url.includes("/api/match")).length, beforeRejected);
   await run("document.getElementById('clear').click()");
   assert.equal(await run("!document.getElementById('consent').checked && document.getElementById('find').disabled"), true);
   assert.equal(await run("document.getElementById('barrier').getAttribute('aria-invalid')"), "false");

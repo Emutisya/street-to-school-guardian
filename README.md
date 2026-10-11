@@ -187,6 +187,10 @@ the same bounded anonymous-text backstop as live matching. Accidental contact
 markers, numbers, private-note fields and extra root fields fail the entire
 evaluation before any case is ranked or written. Names still cannot reliably be
 detected; this is not permission to use real family data as a benchmark.
+Anonymous text gates also reject Unicode directional/format controls, lone
+surrogates and non-whitespace control characters before tokenization. Plain tabs
+and line breaks remain usable. Error messages explain what to remove without
+echoing the hidden input; client and server apply the same control categories.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
