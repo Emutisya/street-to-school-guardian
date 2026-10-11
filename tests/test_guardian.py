@@ -387,6 +387,17 @@ class HTTPTests(unittest.TestCase):
         self.assertEqual(json.loads(self.request("/health")[2])["resources"], 12)
         self.assertEqual(self.request("/?clawpilotTheme=light")[0], 200)
 
+    def test_readiness_is_distinct_from_server_liveness(self):
+        ready = self.request("/ready")
+        self.assertEqual(ready[0], 200)
+        self.assertEqual(json.loads(ready[2])["status"], "ready")
+        with patch.object(self.model, "idf", {}):
+            unavailable = self.request("/ready")
+            self.assertEqual(unavailable[0], 503)
+            self.assertIn("Fit or reload", json.loads(unavailable[2])["recovery"])
+            self.assertEqual(self.request("/health")[0], 200)
+        self.assertEqual(self.request("/ready")[0], 200)
+
     def test_http_inference_matches_direct_inference_and_no_query_echo(self):
         payload = {"consent": True, "text": "Bus fares make the journey difficult.", "mode": "offline"}
         status, headers, body = self.request("/api/match", payload)

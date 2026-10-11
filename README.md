@@ -124,6 +124,10 @@ the page before transport as well as by the authoritative server gate. Errors
 are linked to the textarea, marked with `aria-invalid`, and focus the field for
 correction; editing/reset clears stale error state. This conservative backstop
 does not anonymize names or make private input safe.
+`GET /health` remains server liveness; `GET /ready` separately checks that the
+catalog retriever is fitted and returns current catalog provenance. An unfitted
+model returns HTTP 503 with a fit/reload recovery instruction even when health
+is HTTP 200. Readiness does not imply any real support is available.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

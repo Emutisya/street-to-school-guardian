@@ -72,6 +72,15 @@ def create_server(model, port=8765):
                     self.reply(200, HTML.read_bytes(), "text/html; charset=utf-8")
                 elif self.path == "/health":
                     self.reply(200, {"status": "ok", "resources": len(model.catalog)})
+                elif self.path == "/ready":
+                    try:
+                        summary = model.summary()
+                    except ValueError:
+                        self.reply(503, {"status": "unavailable", "recovery": "Fit or reload the synthetic catalog model before using the finder."})
+                    else:
+                        self.reply(200, {"status": "ready", "catalog_sha256": summary["catalog_sha256"],
+                                         "resources": summary["documents"], "vocabulary": summary["vocabulary_size"],
+                                         "note": "Local retrieval readiness only; no real services or referrals."})
                 else:
                     self.reply(404, {"error": "Route not found."})
             except RequestError as exc:
