@@ -16,6 +16,10 @@ or notes, contains no relevance score, and does not create a real referral.
 Stale page offsets beyond a newly filtered catalog fail with `offset_out_of_range`
 and an offset-zero recovery instruction, rather than displaying impossible page
 positions. An empty filtered catalog still has a valid empty page at offset zero.
+Match/explanation responses carry catalog fingerprint, algorithm, artifact version,
+fixed threshold and tokenizer provenance. Identical catalog runs share provenance
+across different anonymous descriptions. No query fingerprint, request identifier
+or personal/session tracking is introduced.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

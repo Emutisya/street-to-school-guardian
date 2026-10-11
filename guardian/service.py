@@ -167,6 +167,7 @@ def match(model, payload):
     return {
         "results": ranked, "status": "matched" if ranked else "no_match",
         "diagnostics": model.diagnostics(text, mode),
+        "provenance": retrieval_provenance(model),
         "message": "Fictional options for a human conversation; no referral has been sent."
         if ranked else "No close demo match. Try a specific general barrier, relax the format preference, or discuss options with a trusted human. This is not a denial of support.",
         "score_note": "TF-IDF cosine similarity, not a probability, need score or eligibility decision."
@@ -175,7 +176,13 @@ def match(model, payload):
 
 def explain(model, payload):
     text, mode = validate(payload)
-    return model.trace(text, mode, payload.get("limit", 3))
+    return {**model.trace(text, mode, payload.get("limit", 3)), "provenance": retrieval_provenance(model)}
+
+
+def retrieval_provenance(model):
+    summary = model.summary()
+    return {field: summary[field] for field in
+            ("algorithm", "artifact_version", "catalog_sha256", "threshold", "tokenizer")}
 
 
 def handoff(model, payload):

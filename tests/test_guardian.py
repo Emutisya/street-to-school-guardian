@@ -474,6 +474,16 @@ class ConsentTests(unittest.TestCase):
             with self.assertRaises(RequestError):
                 match(self.model, {**payload, "limit": limit})
 
+    def test_retrieval_provenance_tracks_catalog_changes_not_anonymous_queries(self):
+        first = match(self.model, {"consent": True, "text": "bus fares"})
+        second = match(self.model, {"consent": True, "text": "notebooks"})
+        self.assertEqual(first["provenance"], second["provenance"])
+        revised = load_catalog()
+        revised[0]["description"] += " Orchard apples."
+        changed = match(Retriever(revised).fit(), {"consent": True, "text": "bus fares"})
+        self.assertNotEqual(first["provenance"]["catalog_sha256"], changed["provenance"]["catalog_sha256"])
+        self.assertNotIn("bus fares", json.dumps(first["provenance"]))
+
     def test_handoff_simulation_does_not_echo_barriers(self):
         result = handoff(self.model, {"consent": True, "resource_id": "transport"})
         self.assertEqual(result["status"], "simulation_only")
