@@ -27,6 +27,8 @@ def save_evaluation(model, path):
                                          prefix=f".{path.name}.", suffix=".tmp", delete=False) as output:
             temporary = Path(output.name)
             output.write(json.dumps(report, sort_keys=True, indent=2) + "\n")
+            output.flush()
+            os.fsync(output.fileno())
         os.replace(temporary, path)
     finally:
         if temporary is not None:

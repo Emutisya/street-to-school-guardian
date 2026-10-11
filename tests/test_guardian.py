@@ -208,6 +208,22 @@ class ModelTests(unittest.TestCase):
             self.assertEqual(list(Path(directory).glob("*.tmp")), [])
             self.assertEqual(Retriever.load(path, self.catalog).rank("bus fares"), self.model.rank("bus fares"))
 
+    def test_failed_file_sync_preserves_last_model_and_synthetic_report(self):
+        paths = [ROOT / "models" / "sync-model.json", ROOT / "models" / "sync-report.json"]
+        operations = [self.model.save, lambda path: save_evaluation(self.model, path)]
+        try:
+            for path, operation in zip(paths, operations):
+                operation(path)
+                original = path.read_bytes()
+                with patch("guardian.model.os.fsync", side_effect=OSError("isolated sync failure")):
+                    with self.assertRaises(OSError):
+                        operation(path)
+                self.assertEqual(path.read_bytes(), original)
+                self.assertEqual(list(path.parent.glob(f".{path.name}.*.tmp")), [])
+        finally:
+            for path in paths:
+                path.unlink(missing_ok=True)
+
     def test_artifact_boolean_weights_cannot_impersonate_unit_weights(self):
         catalog = copy.deepcopy(self.catalog[:1])
         catalog[0]["description"] = "bus"

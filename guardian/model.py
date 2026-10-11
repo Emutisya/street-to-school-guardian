@@ -171,6 +171,8 @@ class Retriever:
                                              prefix=f".{path.name}.", suffix=".tmp", delete=False) as output:
                 temporary = Path(output.name)
                 output.write(content)
+                output.flush()
+                os.fsync(output.fileno())
             os.replace(temporary, path)
         finally:
             if temporary is not None:

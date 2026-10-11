@@ -2,6 +2,10 @@
 Saved model parsing is bounded to one MiB and requires strict UTF-8 JSON with
 unique fields and finite numbers. Excessive nesting fails without a traceback;
 exact catalog/refit validation still applies after framing checks.
+Model and synthetic report publication flush and synchronize the completed file
+before atomic replacement. A sync failure preserves the previous artifact and
+removes the staging file. This improves file durability, not a guarantee against
+all filesystem or power-loss failures.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It
