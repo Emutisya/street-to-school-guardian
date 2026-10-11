@@ -7,7 +7,6 @@ explains the match, and prepares a human handoff preview without building a
 profile of the child.
 
 [![CI](https://github.com/Emutisya/street-to-school-guardian/actions/workflows/ci.yml/badge.svg)](https://github.com/Emutisya/street-to-school-guardian/actions/workflows/ci.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 ## The invention thesis
 
@@ -190,7 +189,7 @@ Responses do not echo the submitted description. Invalid input returns 400, miss
 
 The fixed threshold is a demo heuristic, **not a calibrated safety boundary or probability cutoff**, and was not selected by optimizing this evaluation set. A rare-word overlap can still be misleading. Scores are not probabilities, need scores, eligibility scores, urgency or confidence in a service.
 
-**Data provenance:** all catalog text, queries and relevance labels were manually authored for this project as synthetic examples. No scraped records, real children, names, birth dates, GPS, institutions or service contact claims. Data is distributed with the repository under MIT. Mode/language/cost are fictional catalog metadata, not eligibility filters.
+**Data provenance:** all catalog text, queries and relevance labels were manually authored for this project as synthetic examples. No scraped records, real children, names, birth dates, GPS, institutions or service contact claims. Synthetic data is included in the repository. Mode/language/cost are fictional catalog metadata, not eligibility filters.
 
 **Split:** 12 catalog descriptions are used for fitting. Separately written query strings and relevance labels are held out from fitting: 26 catalog-like queries (including two multi-barrier examples), six unmatched controls, and eight harder paraphrase/multilingual probes. Evaluation checks for exact description/query overlap and duplicate queries. This prevents exact-text duplicates, **not lexical or conceptual overlap**: primary queries deliberately share much of the catalog vocabulary. The challenge set exposes the resulting optimism. None of the relevance labels are used in training.
 
@@ -235,7 +234,7 @@ Resource matching is only one small part of improving education access. It canno
 
 Use this repository for learning, synthetic demonstrations and community design discussions. Do not use it for selection, denial of services, school discipline, child monitoring, crisis response or real referral decisions. The model is intentionally transparent and lightweight, but that does not make it automatically safe or equitable.
 
-CI verifies program behavior, not social outcomes or production readiness. The MIT license grants software rights; it does not certify fitness for a safeguarding use case.
+CI verifies program behavior, not social outcomes or production readiness. This prototype is not certified for safeguarding use cases.
 
 ## From working core to a community support network
 
@@ -254,6 +253,6 @@ Keep all examples synthetic and anonymous. Add held-out query judgments when ext
 
 Retrain when descriptions or tokenization change; ignored model outputs should not be committed. Secrets, virtual environments, caches, screenshots and model outputs are excluded by `.gitignore`.
 
-## License
+## Project
 
-[MIT](LICENSE). Built by Elizabeth Mutisya as an open, local-first AI for Education prototype.
+Built by Elizabeth Mutisya as a local-first AI for Education prototype.
