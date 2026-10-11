@@ -161,10 +161,11 @@ def evaluate(model):
     test_texts += [q.strip().lower() for q in evaluation["unmatched_queries"]]
     if len(test_texts) != len(set(test_texts)) or training_texts.intersection(test_texts):
         raise ValueError("Exact train/test overlap or duplicate evaluation query.")
-    canonical_queries = [tuple(tokens(text)) for text in test_texts]
+    canonical = lambda text: tuple(sorted(Counter(tokens(text)).items()))
+    canonical_queries = [canonical(text) for text in test_texts]
     if len(canonical_queries) != len(set(canonical_queries)):
         raise ValueError("Token-equivalent duplicate evaluation query.")
-    if {query for query in canonical_queries if query} & {tuple(tokens(text)) for text in training_texts}:
+    if {query for query in canonical_queries if query} & {canonical(text) for text in training_texts}:
         raise ValueError("Token-equivalent training/evaluation overlap.")
     hits, recalls, reciprocals = [], [], []
     for item in evaluation["queries"]:

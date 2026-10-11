@@ -175,6 +175,19 @@ class ModelTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "Token-equivalent"):
             evaluate(Retriever(resources).fit())
 
+    def test_reordered_bag_of_words_cannot_leak_into_evaluation(self):
+        data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
+        duplicate = copy.deepcopy(data["queries"][0])
+        duplicate["text"] = " ".join(reversed(tokens(duplicate["text"])))
+        data["queries"].append(duplicate)
+        with patch("guardian.model.json.loads", return_value=data), self.assertRaisesRegex(ValueError, "Token-equivalent"):
+            evaluate(self.model)
+        data["queries"].pop()
+        resources = copy.deepcopy(self.catalog)
+        resources[0]["description"] = duplicate["text"]
+        with self.assertRaisesRegex(ValueError, "Token-equivalent"):
+            evaluate(Retriever(resources).fit())
+
 
 class ConsentTests(unittest.TestCase):
     @classmethod
