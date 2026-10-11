@@ -116,7 +116,7 @@ class Retriever:
         # This small catalog makes exact re-fit validation inexpensive and detects
         # stale, corrupt or tampered artifacts without trusting persisted weights.
         expected = cls(catalog).fit()
-        if saved != {
+        if not isinstance(saved, dict) or type(saved.get("version")) is not int or saved != {
             "version": 1, "catalog_sha256": fingerprint(catalog),
             "idf": expected.idf, "vectors": expected.vectors
         }:

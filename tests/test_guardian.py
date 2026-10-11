@@ -80,6 +80,11 @@ class ModelTests(unittest.TestCase):
             loaded = Retriever.load(path, self.catalog)
             self.assertEqual(loaded.rank("bus fares"), self.model.rank("bus fares"))
             saved = json.loads(path.read_text(encoding="utf-8"))
+            saved["version"] = True
+            path.write_text(json.dumps(saved), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                Retriever.load(path, self.catalog)
+            saved["version"] = 1
             saved["idf"]["bus"] = -1
             path.write_text(json.dumps(saved), encoding="utf-8")
             with self.assertRaises(ValueError):
