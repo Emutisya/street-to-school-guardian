@@ -109,6 +109,11 @@ Handoff, comparison and plan dialogs focus their summary heading when opened,
 support native keyboard focus containment and Escape dismissal, and return focus
 to the initiating control on close. Withdrawal instead returns focus to consent
 when the initiating control is removed or disabled.
+No-match cards translate count-only diagnostics into concrete next steps, explain
+English vocabulary limitations without guessing the input language, and offer an
+explicit “Try any fictional format” retry only when format constraints caused the
+absence of matches. The user chooses this retry; preferences are never relaxed
+silently and consent remains required.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

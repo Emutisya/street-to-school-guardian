@@ -297,6 +297,29 @@
         box.append(node("div", "↗", "empty-symbol"), node("h3", title), node("p", text));
         results.replaceChildren(box);
       }
+      function noMatch(data) {
+        empty("No close match is not a denial.", data.message);
+        const diagnostic = data.diagnostics;
+        const help = {
+          no_usable_terms: "The English tokenizer found only generic or ignored terms. Try a concrete fictional barrier, such as bus fares or printed worksheets.",
+          outside_vocabulary: "None of the usable words occur in the fictional catalog vocabulary. English descriptions are supported; this is not language detection.",
+          empty_format: "The selected format has no fictional catalog entries.",
+          format_excluded_matches: "The format preference excluded otherwise similar fictional descriptions.",
+          below_similarity_threshold: "Some words are known, but no fictional description reaches the fixed similarity threshold. Browse the catalog or discuss possibilities with a trusted human."
+        };
+        const box = results.firstElementChild;
+        box.append(node("p", help[diagnostic.reason] || "This synthetic catalog cannot cover every barrier."),
+          node("p", `${diagnostic.known_term_count} of ${diagnostic.usable_term_count} unique usable terms in the demo vocabulary; ${diagnostic.candidate_count} format candidates. Counts are not a need assessment.`, "subtle"));
+        if (["empty_format", "format_excluded_matches"].includes(diagnostic.reason)) {
+          const retry = node("button", "Try any fictional format"); retry.type = "button";
+          retry.id = "relax-format";
+          retry.addEventListener("click", () => {
+            if (!consent.checked || busy) return;
+            mode.value = "any"; invalidate(); $("finder").requestSubmit();
+          });
+          box.append(retry);
+        }
+      }
       function invalidate(clearInput = false) {
         epoch++; if (pending) pending.abort(); pending = null; busy = false;
         nextOffset = null;
@@ -488,7 +511,7 @@
           if (generation !== epoch || !consent.checked) return;
           $("result-count").textContent = `${data.results.length} demo ideas`;
           if (data.results.length) render(data.results);
-          else empty("No close match is not a denial.", data.message);
+          else noMatch(data);
           message(data.message);
         } catch (error) {
           if (generation === epoch && error.name !== "AbortError") message(error.name === "TimeoutError" ? "The local matching request timed out. Check the Python server and try again." : error.message || "Local server unavailable. Start python -m guardian serve.", true);

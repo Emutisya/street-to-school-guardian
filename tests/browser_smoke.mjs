@@ -100,12 +100,19 @@ try {
   await rpc("Input.dispatchKeyEvent", {type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27});
   await rpc("Input.dispatchKeyEvent", {type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27});
   await until(() => run("!document.getElementById('handoff').open"), "keyboard modal dismissal");
+  await until(() => run("document.activeElement.getAttribute('aria-label')?.startsWith('Preview human handoff')"), "handoff focus restored");
   assert.equal(await run("document.activeElement.getAttribute('aria-label')?.startsWith('Preview human handoff')"), true);
   await run("document.getElementById('consent').click()");
   assert.equal(await run("document.getElementById('barrier').value === '' && !document.querySelector('.resource') && !document.getElementById('handoff').open"), true);
   await run("document.getElementById('consent').click(); document.getElementById('barrier').value = 'quantum entanglement'; document.getElementById('barrier').dispatchEvent(new Event('input')); document.getElementById('find').click()");
   await until(() => run("document.getElementById('result-count').textContent === '0 demo ideas'"), "no-match state");
   assert.ok((await run("document.getElementById('results').textContent")).includes("not a denial"));
+  assert.ok((await run("document.getElementById('results').textContent")).includes("None of the usable words"));
+  await run("document.getElementById('barrier').value = 'printed worksheets paper exercises'; document.getElementById('barrier').dispatchEvent(new Event('input')); document.getElementById('mode').value = 'online'; document.getElementById('mode').dispatchEvent(new Event('change')); document.getElementById('find').click()");
+  await until(() => run("!!document.getElementById('relax-format')"), "format diagnostic recovery");
+  await run("document.getElementById('relax-format').click()");
+  await until(() => run("document.querySelectorAll('.resource').length > 0"), "explicit any-format retry");
+  assert.equal(await run("document.getElementById('mode').value"), "any");
   await run("document.getElementById('barrier').value = 'a@example.invalid'; document.getElementById('barrier').dispatchEvent(new Event('input')); document.getElementById('find').click()");
   await until(() => run("document.getElementById('status').dataset.error === 'true'"), "invalid input");
   assert.ok((await run("document.getElementById('status').textContent")).includes("Remove"));
@@ -164,7 +171,7 @@ try {
   assert.deepEqual(errors, [], "No browser exceptions or server stderr");
   console.log("PASS: consent, real HTTP ranking, handoff, withdrawal, no-match, invalid input, reset, late-response gate, themes, mobile layout, no storage, no external requests.");
 } catch (error) {
-  console.error(error.message);
+  console.error(error.stack || error.message);
   if (browserError && !socket) console.error(browserError.slice(-1500));
   process.exitCode = 1;
 } finally {
