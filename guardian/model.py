@@ -239,6 +239,9 @@ def evaluate(model):
             text = item if group == "unmatched_queries" else item["text"]
             relevant = set() if group == "unmatched_queries" else set(item["relevant"])
             ids = [row["id"] for row in model.rank(text, limit=3)]
+            hits = [index + 1 for index, rid in enumerate(ids) if rid in relevant]
+            average_precision = sum(hit_number / rank for hit_number, rank in enumerate(hits, 1)) / min(len(relevant), 3) if relevant else None
+            ideal = sum(1 / math.log2(rank + 1) for rank in range(1, min(len(relevant), 3) + 1))
             cases.append({
                 "case_id": f"{group}:{index}",
                 "group": group, "text": text, "relevant": sorted(relevant), "ranked": ids,
@@ -248,6 +251,9 @@ def evaluate(model):
                 "recall_at_3": len(relevant.intersection(ids)) / len(relevant) if relevant else None,
                 "reciprocal_rank": next((1 / (i + 1) for i, rid in enumerate(ids)
                                         if rid in relevant), 0) if relevant else None,
+                "precision_returned": len(hits) / len(ids) if ids else 0,
+                "average_precision_at_3": average_precision,
+                "ndcg_at_3": sum(1 / math.log2(rank + 1) for rank in hits) / ideal if ideal else None,
             })
     positive = [row for row in cases if row["group"] == "queries"]
     negatives = [row for row in cases if row["group"] == "unmatched_queries"]
@@ -273,6 +279,9 @@ def evaluate(model):
             "hit_at_3": round(sum(row["recall_at_3"] > 0 for row in group) / len(group), 6),
             "mean_recall_at_3": round(sum(row["recall_at_3"] for row in group) / len(group), 6),
             "mrr_at_3": round(sum(row["reciprocal_rank"] for row in group) / len(group), 6),
+            "mean_precision_returned": round(sum(row["precision_returned"] for row in group) / len(group), 6),
+            "map_at_3": round(sum(row["average_precision_at_3"] for row in group) / len(group), 6),
+            "ndcg_at_3": round(sum(row["ndcg_at_3"] for row in group) / len(group), 6),
             "answered_top1_hit_rate": round(sum(row["top1_hit"] for row in answered) / len(answered), 6)
                 if answered else None
         }

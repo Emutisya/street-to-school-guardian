@@ -176,6 +176,12 @@ vector collisions which the retriever cannot distinguish, plus vocabulary terms
 never exercised by the bundled synthetic benchmark. The term preview is bounded
 to fifty with an explicit omitted count. This is an editorial audit, not a quality
 score or automatic catalog-merging decision.
+Ranking diagnostics additionally report mean precision among returned options,
+MAP-at-three and binary-relevance NDCG-at-three for each positive query group.
+Average precision divides by the smaller of the relevant-label count and three;
+NDCG uses the ideal binary ranking under the same bound. Abstention contributes
+zero on labeled cases. These measure editorial synthetic relevance, not support
+effectiveness, likelihood of success or any person's suitability.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

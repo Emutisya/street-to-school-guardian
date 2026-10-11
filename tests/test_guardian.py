@@ -261,6 +261,22 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(abstained["group_metrics"]["challenge"]["coverage"], 0)
         self.assertIsNone(abstained["group_metrics"]["challenge"]["answered_top1_hit_rate"])
 
+    def test_ranking_quality_metrics_penalize_wrong_order_and_account_for_multiple_labels(self):
+        with patch.object(self.model, "rank", return_value=[{"id": "transport"}, {"id": "meal"}, {"id": "connectivity"}]):
+            report = evaluate(self.model)
+        row = next(case for case in report["cases"] if case["case_id"] == "queries:25")
+        self.assertAlmostEqual(row["precision_returned"], 2 / 3)
+        self.assertAlmostEqual(row["average_precision_at_3"], (1 + 2 / 3) / 2)
+        import math
+        self.assertAlmostEqual(row["ndcg_at_3"], (1 + 1 / math.log2(4)) / (1 + 1 / math.log2(3)))
+        standard = [case for case in report["cases"] if case["group"] == "queries"]
+        self.assertAlmostEqual(report["group_metrics"]["standard"]["map_at_3"],
+                               sum(case["average_precision_at_3"] for case in standard) / len(standard), places=6)
+        with patch.object(self.model, "rank", return_value=[]):
+            empty = evaluate(self.model)
+        self.assertEqual(empty["group_metrics"]["standard"]["map_at_3"], 0)
+        self.assertEqual(empty["group_metrics"]["standard"]["ndcg_at_3"], 0)
+
     def test_evaluation_diagnostics_separate_vocabulary_failures_and_negative_matches(self):
         report = evaluate(self.model)
         self.assertEqual(len({row["case_id"] for row in report["cases"]}), len(report["cases"]))
