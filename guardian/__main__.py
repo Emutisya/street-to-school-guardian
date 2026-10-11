@@ -4,7 +4,7 @@ from pathlib import Path
 import sys
 
 from .model import Retriever, evaluate, evaluate_formats, load_catalog
-from .reporting import save_evaluation
+from .reporting import compare_evaluation, save_evaluation
 from .server import create_server
 from .service import RequestError, browse, compare, match, plan
 
@@ -17,6 +17,8 @@ def main():
     evaluation = commands.add_parser("evaluate", help="Evaluate held-out synthetic queries, never used for fitting")
     evaluation.add_argument("--output", help="Atomically write a synthetic benchmark report inside this repository")
     evaluation.add_argument("--model", help="Validate a saved artifact before evaluating it")
+    comparison = commands.add_parser("compare-evaluation", help="Compare validated synthetic case ranks to a repository-local snapshot")
+    comparison.add_argument("snapshot")
     commands.add_parser("evaluate-formats", help="Audit fixed benchmark labels under any, offline and online filters")
     inspect = commands.add_parser("inspect", help="Describe the fitted catalog or validate a saved artifact without queries")
     inspect.add_argument("--model", help="Validate this artifact by exact deterministic refit")
@@ -50,6 +52,8 @@ def main():
             print(json.dumps(report, indent=2))
         elif args.command == "evaluate-formats":
             print(json.dumps(evaluate_formats(model), indent=2))
+        elif args.command == "compare-evaluation":
+            print(json.dumps(compare_evaluation(model, args.snapshot), indent=2))
         elif args.command == "inspect":
             print(json.dumps({**model.summary(), "source": "validated_artifact" if args.model else "in_memory_fit"}, indent=2))
         elif args.command == "browse":

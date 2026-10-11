@@ -148,6 +148,12 @@ reproducible synthetic benchmark snapshot and prints the same report. Only
 repository-local paths are accepted, failed replacement preserves the last good
 report, and live request text is never a report input. `--model models\tfidf.json`
 evaluates an exact-validated artifact rather than the default in-memory refit.
+`python -m guardian compare-evaluation models\benchmark.json` compares the current
+retriever to a bounded repository-local snapshot with the same catalog, benchmark
+and threshold. Case identities/text/labels must exactly match the bundled
+synthetic benchmark and ranks must be distinct catalog IDs. Metrics are recomputed
+from ranks across standard and challenge cases, not trusted from stored aggregate
+fields. Changes return case IDs and catalog IDs, never arbitrary snapshot text.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

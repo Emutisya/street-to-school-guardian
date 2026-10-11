@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 from guardian.model import DATA_DIR, Retriever, evaluate, evaluate_formats, load_catalog, tokens
 from guardian.server import create_server
-from guardian.reporting import save_evaluation
+from guardian.reporting import compare_evaluation, save_evaluation
 from guardian.service import RequestError, browse, compare, handoff, match, plan
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -606,6 +606,37 @@ class CLITests(unittest.TestCase):
             self.assertEqual(list(path.parent.glob(f".{path.name}.*.tmp")), [])
             with self.assertRaises(ValueError):
                 save_evaluation(model, ROOT.parent / "outside-report.json")
+        finally:
+            path.unlink(missing_ok=True)
+
+    def test_snapshot_comparison_recomputes_ranks_and_rejects_incompatible_inputs(self):
+        path = ROOT / "models" / "comparison-test.json"
+        model = Retriever(load_catalog()).fit()
+        try:
+            report = save_evaluation(model, path)
+            unchanged = self.run_cli("compare-evaluation", str(path))
+            self.assertEqual(unchanged.returncode, 0, unchanged.stderr)
+            self.assertEqual(json.loads(unchanged.stdout)["changed_cases"], [])
+            old = copy.deepcopy(report)
+            old["cases"][0]["ranked"] = []
+            old["top1_hit_rate"] = 999
+            path.write_text(json.dumps(old), encoding="utf-8")
+            changed = compare_evaluation(model, path)
+            self.assertEqual(changed["changed_cases"][0]["case_id"], "queries:1")
+            self.assertGreater(changed["metrics"]["top1_hit_rate"]["delta"], 0)
+            for mutate in (
+                lambda data: data.update(benchmark_sha256="different"),
+                lambda data: data["cases"][0].update(text="Unapproved example"),
+                lambda data: data["cases"][0].update(ranked=["missing"]),
+                lambda data: data["cases"][0].update(private_notes="not accepted"),
+            ):
+                bad = copy.deepcopy(report); mutate(bad)
+                path.write_text(json.dumps(bad), encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    compare_evaluation(model, path)
+            path.write_bytes(b"x" * 262145)
+            with self.assertRaisesRegex(ValueError, "too large"):
+                compare_evaluation(model, path)
         finally:
             path.unlink(missing_ok=True)
 
