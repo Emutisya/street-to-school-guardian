@@ -42,6 +42,16 @@ class ModelTests(unittest.TestCase):
             self.assertIn(word, tokens(item["description"]))
         self.assertIn("not a probability", item["explanation"])
 
+    def test_display_rounding_does_not_change_retrieval_order(self):
+        resources = copy.deepcopy(self.catalog[:2])
+        resources[0]["id"], resources[1]["id"] = "a", "z"
+        model = Retriever(resources).fit()
+        model.vectors = {"a": {"bus": .5000001}, "z": {"bus": .5000002}}
+        with patch.object(model, "vectorize", return_value={"bus": 1}):
+            ranked = model.rank("bus")
+        self.assertEqual([row["id"] for row in ranked], ["z", "a"])
+        self.assertEqual(ranked[0]["score"], ranked[1]["score"])
+
     def test_catalog_validation_and_snapshot_prevent_stale_vectors(self):
         for catalog in ([], None, [None], [self.catalog[0], self.catalog[0]]):
             with self.subTest(catalog=catalog), self.assertRaises(ValueError):

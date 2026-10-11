@@ -94,13 +94,13 @@ class Retriever:
             if score < MIN_SCORE:
                 continue
             terms = sorted(contributions, key=lambda w: (-contributions[w], w))[:5]
-            results.append({
+            results.append((score, {
                 **resource, "score": round(score, 6), "matched_terms": terms,
                 "explanation": "Shared description terms: " + ", ".join(terms)
                     + ". This similarity is not a probability or an assessment of a person."
-            })
-        results.sort(key=lambda item: (-item["score"], item["id"]))
-        return results[:limit]
+            }))
+        results.sort(key=lambda item: (-item[0], item[1]["id"]))
+        return [item for _, item in results[:limit]]
 
     def save(self, path):
         path = Path(path)
