@@ -33,6 +33,9 @@ explicitly excluded from the mean denominator; this is not language detection.
 `evaluate-cardinality` compares single-label and compound-label benchmark slices
 separately for standard/challenge cases. Empty slices report `null` metrics.
 These are synthetic editorial annotation groups, never child/family profiles.
+`audit-pairs` inventories compound synthetic co-labels and whether both resources
+were retrieved together. Untested mathematical catalog pairs have a bounded
+preview; this is not family co-occurrence analysis, and not every pair is meaningful.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

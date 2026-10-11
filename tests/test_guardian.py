@@ -909,6 +909,20 @@ class CLITests(unittest.TestCase):
         self.assertEqual(groups["challenge_queries"]["multiple_labels"]["queries"], 0)
         self.assertIsNone(groups["challenge_queries"]["multiple_labels"]["coverage"])
 
+    def test_pair_audit_uses_editorial_labels_and_bounds_untested_preview(self):
+        result = self.run_cli("audit-pairs")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        benchmark = evaluate(Retriever(load_catalog()).fit())
+        for pair in report["tested_pairs"]:
+            cases = [row for row in benchmark["cases"] if set(pair["resource_ids"]) <= set(row["relevant"])]
+            self.assertEqual(pair["standard_labels"] + pair["challenge_labels"], len(cases))
+            self.assertEqual(pair["retrieved_together_queries"],
+                             sum(set(pair["resource_ids"]) <= set(row["ranked"]) for row in cases))
+        self.assertEqual(report["possible_catalog_pairs"],
+                         len(report["tested_pairs"]) + report["untested_pair_count"])
+        self.assertLessEqual(len(report["untested_pair_preview"]), 20)
+
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))

@@ -2,6 +2,7 @@
 
 from .model import evaluate
 from .service import RequestError, match
+from itertools import combinations
 
 
 def explain_case(model, case_id, consent=False, mode="any", limit=3):
@@ -60,3 +61,24 @@ def cardinality_report(model):
         }
     return {"catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
             "groups": groups, "note": "Slices are synthetic annotation cardinality, not child or family profiles. Empty slices have null metrics; standard and challenge cases remain separate."}
+
+
+def pair_report(model):
+    benchmark = evaluate(model)
+    tested = {}
+    for row in benchmark["cases"]:
+        for pair in combinations(sorted(row["relevant"]), 2):
+            entry = tested.setdefault(pair, {"resource_ids": list(pair), "standard_labels": 0,
+                                             "challenge_labels": 0, "retrieved_together_queries": 0})
+            entry["standard_labels" if row["group"] == "queries" else "challenge_labels"] += 1
+            entry["retrieved_together_queries"] += int(set(pair) <= set(row["ranked"]))
+    possible = set(combinations(sorted(row["id"] for row in model.catalog), 2))
+    untested = sorted(possible - set(tested))
+    return {
+        "catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
+        "tested_pairs": [tested[pair] for pair in sorted(tested)],
+        "possible_catalog_pairs": len(possible), "untested_pair_count": len(untested),
+        "untested_pair_preview": [list(pair) for pair in untested[:20]],
+        "omitted_untested_pairs": max(0, len(untested) - 20),
+        "note": "Synthetic editorial co-label audit, not family co-occurrence data. Not every mathematical pair is meaningful or requires a benchmark case."
+    }
