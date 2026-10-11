@@ -91,6 +91,12 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(result["status"], "no_match")
         self.assertIn("not a denial", result["message"])
 
+    def test_consumers_cannot_change_format_filters_through_results(self):
+        expected = self.model.rank("bus fares", "offline")
+        result = self.model.rank("bus fares", "offline")
+        result[0]["modes"].clear()
+        self.assertEqual(self.model.rank("bus fares", "offline"), expected)
+
     def test_unseen_and_generic_queries_abstain(self):
         for text in ["", "quantum entanglement", "Learning.", "We want assistance."]:
             with self.subTest(text=text):

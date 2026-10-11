@@ -97,7 +97,7 @@ class Retriever:
                 continue
             terms = sorted(contributions, key=lambda w: (-contributions[w], w))[:5]
             results.append((score, {
-                **resource, "score": round(score, 6), "matched_terms": terms,
+                **deepcopy(resource), "score": round(score, 6), "matched_terms": terms,
                 "explanation": "Shared description terms: " + ", ".join(terms)
                     + ". This similarity is not a probability or an assessment of a person."
             }))
