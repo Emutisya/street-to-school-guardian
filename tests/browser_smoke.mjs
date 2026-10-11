@@ -95,6 +95,8 @@ try {
   await run("document.getElementById('consent').click(); document.querySelector('[data-preset]').click(); document.getElementById('find').click()");
   await until(() => run("document.querySelectorAll('.resource').length > 0"), "ranked supports");
   assert.ok((await run("document.getElementById('results').textContent")).includes("School journey support desk"));
+  await run("document.getElementById('read-results').click()");
+  assert.equal(await run("document.activeElement.id"), "results-title", "Explicit reading action moves focus without automatic request focus theft");
   assert.equal(await run("document.querySelector('.resource details summary').textContent.startsWith('All ')"), true);
   await run("document.querySelector('.resource details summary').click()");
   assert.equal(await run("document.querySelector('.resource details').open"), true, "Complete explanation is expandable");
@@ -122,6 +124,7 @@ try {
   await run("document.getElementById('consent').click()");
   assert.equal(await run("document.getElementById('barrier').value === '' && !document.querySelector('.resource') && !document.getElementById('handoff').open"), true);
   assert.equal(await run("document.getElementById('explain-retrieval').disabled && document.getElementById('audit-candidates').children.length === 0"), true, "Withdrawal clears retrieval audit");
+  assert.equal(await run("document.getElementById('read-results').disabled"), true);
   await run("document.getElementById('consent').click(); document.getElementById('barrier').value = 'quantum entanglement'; document.getElementById('barrier').dispatchEvent(new Event('input')); document.getElementById('find').click()");
   await until(() => run("document.getElementById('result-count').textContent === '0 demo ideas'"), "no-match state");
   assert.ok((await run("document.getElementById('results').textContent")).includes("not a denial"));

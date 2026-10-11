@@ -215,6 +215,7 @@
         <p class="field-help">Changes the review list size, not the matching threshold or support entitlement.</p>
         <div class="actions"><button class="primary" id="find" type="submit" disabled>Explore support ideas</button><button id="clear" type="button">Reset</button></div>
         <button id="cancel-request" type="button" hidden>Cancel pending local request</button>
+        <button id="read-results" type="button" disabled>Read current ideas or recovery guidance</button>
         <h3>Browse without a description</h3>
         <label class="field-label" for="category">Fictional catalog category</label>
         <select id="category" disabled><option value="">All categories</option></select>
@@ -227,7 +228,7 @@
         <p class="field-help">Reset or untick consent to clear this page and cancel pending requests. No browser storage or server payload logs are used.</p>
       </form>
       <section aria-labelledby="results-title" aria-busy="false" id="result-region">
-        <div class="results-top"><div><div class="step">02 / SUPPORT IDEAS</div><h2 id="results-title">A starting point for a conversation</h2></div><span class="pill" id="result-count">Awaiting consent</span></div>
+        <div class="results-top"><div><div class="step">02 / SUPPORT IDEAS</div><h2 id="results-title" tabindex="-1">A starting point for a conversation</h2></div><span class="pill" id="result-count">Awaiting consent</span></div>
         <p class="subtle">Ranked by description similarity, not urgency, personal need or likelihood of success. Every option needs human verification.</p>
         <div role="status" aria-live="polite" id="status"></div>
         <button id="explain-retrieval" type="button" disabled>Explain current retrieval limits</button>
@@ -271,7 +272,7 @@
       const $ = id => document.getElementById(id);
       const consent = $("consent"), barrier = $("barrier"), mode = $("mode");
       const results = $("results"), status = $("status");
-      let epoch = 0, pending = null, busy = false, nextOffset = null, previousOffset = null, canExplain = false;
+      let epoch = 0, pending = null, busy = false, nextOffset = null, previousOffset = null, canExplain = false, canReview = false;
       const choices = new Map();
       const dialogTriggers = new Map();
       function node(tag, text, className) {
@@ -324,6 +325,7 @@
         $("cancel-request").hidden = !busy;
         $("check-model").disabled = busy;
         $("explain-retrieval").disabled = !consent.checked || busy || !canExplain;
+        $("read-results").disabled = !consent.checked || busy || !canReview;
         $("result-region").setAttribute("aria-busy", String(busy));
         results.querySelectorAll("button").forEach(button => button.disabled = busy || !consent.checked);
       }
@@ -333,6 +335,7 @@
         results.replaceChildren(box);
       }
       function noMatch(data) {
+        canReview = true;
         empty("No close match is not a denial.", data.message);
         const diagnostic = data.diagnostics;
         const help = {
@@ -358,6 +361,7 @@
       function invalidate(clearInput = false) {
         epoch++; if (pending) pending.abort(); pending = null; busy = false;
         nextOffset = null; previousOffset = null;
+        canReview = false;
         canExplain = false; $("retrieval-audit").close(); $("audit-candidates").replaceChildren(); $("audit-note").textContent = "";
         $("catalog-coverage").textContent = "";
         fieldError();
@@ -406,6 +410,7 @@
         }
       }
       function render(items, ranked = true) {
+        canReview = true;
         results.replaceChildren();
         items.forEach((item, index) => {
           const card = node("article", undefined, "resource");
@@ -452,6 +457,7 @@
           const data = await request("/api/related", {consent: true, resource_id: id, mode: mode.value});
           if (generation !== epoch || !consent.checked) return;
           $("result-count").textContent = `${data.results.length} related catalog ideas`;
+          canReview = true;
           if (data.results.length) render(data.results);
           else empty("No close catalog neighbors.", "This fictional description has no other close catalog match in the chosen format. This is not a denial of support.");
           message(`Related to ${data.source_title}. ${data.message}`);
@@ -577,6 +583,7 @@
           $("category").value = selected;
           $("catalog-coverage").textContent = `Current category: ${data.mode_counts.any} fictional ideas in any format, ${data.mode_counts.offline} offline, ${data.mode_counts.online} online. Formats may overlap; counts are not actual service availability.`;
           nextOffset = data.next_offset;
+          canReview = true;
           previousOffset = data.previous_offset;
           $("result-count").textContent = `${data.offset + (data.results.length ? 1 : 0)}–${data.offset + data.results.length} of ${data.total} catalog ideas`;
           if (data.results.length) render(data.results, false);
@@ -650,6 +657,10 @@
         }
       });
       $("close-audit").addEventListener("click", () => $("retrieval-audit").close());
+      $("read-results").addEventListener("click", () => {
+        if (!consent.checked || busy || !canReview) return;
+        $("results-title").focus(); $("results-title").scrollIntoView({block:"start",behavior:"auto"});
+      });
       document.querySelectorAll("[data-preset]").forEach(button => button.addEventListener("click", () => {
         if (!consent.checked) return;
         invalidate(); barrier.value = button.dataset.preset; barrier.focus();

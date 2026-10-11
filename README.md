@@ -56,6 +56,10 @@ explicit choices remain authoritative for that page. No preference is stored.
 With JavaScript disabled, a visible fallback explains that the disabled finder
 sends no description and gives consent-first local CLI alternatives. The
 fictional-service and no-referral boundaries remain visible.
+An explicit “Read current ideas or recovery guidance” action moves keyboard focus
+to the result heading after a completed request. Requests do not steal input
+focus automatically; invalidation/withdrawal disables the action and scrolling
+does not animate.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It
