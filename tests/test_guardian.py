@@ -1054,6 +1054,24 @@ class CLITests(unittest.TestCase):
         finally:
             path.unlink(missing_ok=True)
 
+    def test_snapshot_group_deltas_expose_regressions_hidden_by_aggregate_cancellation(self):
+        path = ROOT / "models" / "group-delta-test.json"
+        model = Retriever(load_catalog()).fit()
+        try:
+            report = evaluate(model)
+            report["cases"][0]["ranked"] = []
+            challenge = next(row for row in report["cases"] if row["case_id"] == "challenge_queries:1")
+            challenge["ranked"] = ["transport"]
+            path.write_text(json.dumps(report), encoding="utf-8")
+            comparison = compare_evaluation(model, path)
+            self.assertEqual(comparison["metrics"]["top1_hit_rate"]["delta"], 0)
+            groups = comparison["group_changes"]
+            self.assertGreater(groups["queries"]["metrics"]["top1_hit_rate"]["delta"], 0)
+            self.assertLess(groups["challenge_queries"]["metrics"]["top1_hit_rate"]["delta"], 0)
+            self.assertIn("challenge_queries:1", groups["challenge_queries"]["regressed_top1_cases"])
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_cli_inspect_validates_artifacts_and_reports_catalog_geometry(self):
         fitted = self.run_cli("inspect")
         self.assertEqual(fitted.returncode, 0, fitted.stderr)

@@ -85,9 +85,33 @@ def compare_evaluation(model, path):
             "unmatched_rejection_rate": sum(not row["ranked"] for row in negatives) / len(negatives)
         }
     before, after = metrics([old for old, _ in pairs]), metrics([new for _, new in pairs])
+    group_changes = {}
+    for group in ("queries", "challenge_queries"):
+        subset = [(old, new) for old, new in pairs if new["group"] == group]
+        def positive_metrics(rows):
+            return {
+                "top1_hit_rate": sum(bool(row["ranked"] and row["ranked"][0] in row["relevant"]) for row in rows) / len(rows),
+                "mean_recall_at_3": sum(len(set(row["ranked"]) & set(row["relevant"])) / len(row["relevant"]) for row in rows) / len(rows)
+            }
+        old_metrics = positive_metrics([old for old, _ in subset])
+        new_metrics = positive_metrics([new for _, new in subset])
+        recovered, regressed = [], []
+        for old, new in subset:
+            was_hit = bool(old["ranked"] and old["ranked"][0] in old["relevant"])
+            now_hit = bool(new["ranked"] and new["ranked"][0] in new["relevant"])
+            if now_hit and not was_hit:
+                recovered.append(new["case_id"])
+            if was_hit and not now_hit:
+                regressed.append(new["case_id"])
+        group_changes[group] = {
+            "queries": len(subset), "recovered_top1_cases": recovered, "regressed_top1_cases": regressed,
+            "metrics": {name: {"previous": round(old_metrics[name], 6), "current": round(new_metrics[name], 6),
+                               "delta": round(new_metrics[name] - old_metrics[name], 6)} for name in old_metrics}
+        }
     return {
         "catalog_sha256": current["catalog_sha256"], "benchmark_sha256": current["benchmark_sha256"],
         "changed_cases": changed,
+        "group_changes": group_changes,
         "metrics": {name: {"previous": round(before[name], 6), "current": round(after[name], 6),
                            "delta": round(after[name] - before[name], 6)} for name in before},
         "note": "All labeled standard and challenge cases combined. Metrics recomputed from validated ranks; stored aggregates ignored. Synthetic comparisons only."

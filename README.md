@@ -43,6 +43,9 @@ It does not tune a threshold on labels or claim real service effectiveness.
 equal-resource macro retrieval, including category breakdowns. Unlabeled resources
 are excluded and reported explicitly. These editorial weights do not establish
 population representativeness or fairness.
+Snapshot comparison also reports standard/challenge deltas and recovered/regressed
+top-one case IDs separately, preventing offsetting group changes from disappearing
+inside an unchanged aggregate. All changes are recomputed from validated ranks.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It
