@@ -131,6 +131,18 @@ class ModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             evaluate(Retriever(leaked).fit())
 
+    def test_failed_save_preserves_existing_fitted_artifact(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "model.json"
+            self.model.save(path)
+            original = path.read_bytes()
+            with patch("guardian.model.os.replace", side_effect=PermissionError("Isolated write failure")):
+                with self.assertRaises(PermissionError):
+                    self.model.save(path)
+            self.assertEqual(path.read_bytes(), original)
+            self.assertEqual(list(Path(directory).glob("*.tmp")), [])
+            self.assertEqual(Retriever.load(path, self.catalog).rank("bus fares"), self.model.rank("bus fares"))
+
     def test_artifact_boolean_weights_cannot_impersonate_unit_weights(self):
         catalog = copy.deepcopy(self.catalog[:1])
         catalog[0]["description"] = "bus"

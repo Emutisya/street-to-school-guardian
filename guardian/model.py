@@ -5,8 +5,10 @@ from copy import deepcopy
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import re
+import tempfile
 
 DATA_DIR = Path(__file__).parent / "data"
 MIN_SCORE = 0.12
@@ -109,10 +111,20 @@ class Retriever:
             raise ValueError("Fit or load the model before saving an artifact.")
         path = Path(path)
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({
+        content = json.dumps({
             "version": 1, "catalog_sha256": fingerprint(self.catalog),
             "idf": self.idf, "vectors": self.vectors
-        }, sort_keys=True, indent=2) + "\n", encoding="utf-8")
+        }, sort_keys=True, indent=2) + "\n"
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile("w", encoding="utf-8", dir=path.parent,
+                                             prefix=f".{path.name}.", suffix=".tmp", delete=False) as output:
+                temporary = Path(output.name)
+                output.write(content)
+            os.replace(temporary, path)
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
 
     @classmethod
     def load(cls, path, catalog):
