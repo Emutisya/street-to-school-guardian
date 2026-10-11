@@ -52,10 +52,17 @@ def create_server(model, port=8765):
 
         def guard(self):
             port = self.server.server_port
+            target = self.requestline.split()[1]
+            if not target.startswith("/") or target.startswith("//") or "#" in target:
+                raise RequestError("Use an exact local route. Do not put input in URLs.")
             expected_hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
+            if len(self.headers.get_all("Host", [])) != 1:
+                raise RequestError("Send exactly one loopback Host header.", 403)
             if self.headers.get("Host") not in expected_hosts:
                 raise RequestError("Use the loopback URL shown in the quickstart.", 403)
             origin = self.headers.get("Origin")
+            if len(self.headers.get_all("Origin", [])) > 1 or len(self.headers.get_all("Sec-Fetch-Site", [])) > 1:
+                raise RequestError("Ambiguous browser origin headers are not allowed.", 403)
             if origin is not None and origin not in {f"http://{h}" for h in expected_hosts}:
                 raise RequestError("Cross-origin requests are not allowed.", 403)
             if self.headers.get("Sec-Fetch-Site") == "cross-site":
@@ -94,7 +101,7 @@ def create_server(model, port=8765):
                               "/api/related": related}
                 if self.path not in operations:
                     raise RequestError("Route not found.", 404)
-                if self.headers.get_content_type() != "application/json":
+                if len(self.headers.get_all("Content-Type", [])) != 1 or self.headers.get_content_type() != "application/json":
                     raise RequestError("Use Content-Type: application/json.", 415)
                 if self.headers.get("Transfer-Encoding") is not None:
                     raise RequestError("Chunked requests are not supported.", 400)

@@ -646,6 +646,32 @@ class HTTPTests(unittest.TestCase):
             "Content-Type": "application/json", "Origin": f"http://127.0.0.1:{self.port}"
         })[0], 200)
 
+    def test_ambiguous_origin_headers_and_nonlocal_request_targets_fail_quietly(self):
+        for path in ("//#invalid", "//[", "/#input", f"http://127.0.0.1:{self.port}/health"):
+            self.assertEqual(self.request(path)[0], 400)
+        for header, value, expected in (
+            ("Host", f"127.0.0.1:{self.port}", 403),
+            ("Origin", f"http://127.0.0.1:{self.port}", 403),
+            ("Sec-Fetch-Site", "same-origin", 403),
+            ("Content-Type", "application/json", 415),
+        ):
+            connection = HTTPConnection("127.0.0.1", self.port, timeout=5)
+            try:
+                connection.putrequest("POST", "/api/match", skip_host=True)
+                if header != "Host":
+                    connection.putheader("Host", f"127.0.0.1:{self.port}")
+                if header != "Content-Type":
+                    connection.putheader("Content-Type", "application/json")
+                connection.putheader(header, value); connection.putheader(header, value)
+                connection.putheader("Content-Length", "2")
+                connection.endheaders(b"{}")
+                response = connection.getresponse()
+                self.assertEqual(response.status, expected)
+                response.read()
+            finally:
+                connection.close()
+        self.assertEqual(self.request("/health")[0], 200)
+
     def test_stalled_request_returns_timeout_without_breaking_server(self):
         connection = HTTPConnection("127.0.0.1", self.port, timeout=8)
         try:

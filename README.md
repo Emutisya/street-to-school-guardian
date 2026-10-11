@@ -213,6 +213,10 @@ Temporary choices have their own clear action which erases choices and generated
 previews while preserving consent, the current example and displayed catalog.
 Removing a focused choice advances focus to a remaining remove button or the
 matching visible card, instead of dropping keyboard users onto the document body.
+The loopback server rejects ambiguous duplicate Host, Origin, fetch-site and
+Content-Type headers instead of choosing whichever value a parser happens to
+return. Absolute/proxy-style targets, network-path targets and fragments are
+rejected as ordinary validation errors; only exact local routes are supported.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
