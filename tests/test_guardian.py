@@ -14,6 +14,7 @@ from unittest.mock import patch
 
 from guardian.model import DATA_DIR, Retriever, evaluate, evaluate_formats, load_catalog, tokens
 from guardian.server import create_server
+from guardian.reporting import save_evaluation
 from guardian.service import RequestError, browse, compare, handoff, match, plan
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -589,6 +590,24 @@ class CLITests(unittest.TestCase):
         run = self.run_cli("evaluate-formats")
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(json.loads(run.stdout), evaluate_formats(Retriever(load_catalog()).fit()))
+
+    def test_evaluation_snapshot_is_atomic_repository_local_and_cli_reproducible(self):
+        path = ROOT / "models" / "snapshot-test.json"
+        model = Retriever(load_catalog()).fit()
+        try:
+            run = self.run_cli("evaluate", "--output", str(path))
+            self.assertEqual(run.returncode, 0, run.stderr)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8")), json.loads(run.stdout))
+            original = path.read_bytes()
+            with patch("guardian.reporting.os.replace", side_effect=PermissionError):
+                with self.assertRaises(PermissionError):
+                    save_evaluation(model, path)
+            self.assertEqual(path.read_bytes(), original)
+            self.assertEqual(list(path.parent.glob(f".{path.name}.*.tmp")), [])
+            with self.assertRaises(ValueError):
+                save_evaluation(model, ROOT.parent / "outside-report.json")
+        finally:
+            path.unlink(missing_ok=True)
 
     def test_cli_inspect_validates_artifacts_and_reports_catalog_geometry(self):
         fitted = self.run_cli("inspect")

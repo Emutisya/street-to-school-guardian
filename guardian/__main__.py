@@ -4,6 +4,7 @@ from pathlib import Path
 import sys
 
 from .model import Retriever, evaluate, evaluate_formats, load_catalog
+from .reporting import save_evaluation
 from .server import create_server
 from .service import RequestError, browse, compare, match, plan
 
@@ -13,7 +14,9 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     train = commands.add_parser("train", help="Fit catalog TF-IDF and save non-personal weights")
     train.add_argument("--output", default=str(Path("models") / "tfidf.json"))
-    commands.add_parser("evaluate", help="Evaluate held-out synthetic queries, never used for fitting")
+    evaluation = commands.add_parser("evaluate", help="Evaluate held-out synthetic queries, never used for fitting")
+    evaluation.add_argument("--output", help="Atomically write a synthetic benchmark report inside this repository")
+    evaluation.add_argument("--model", help="Validate a saved artifact before evaluating it")
     commands.add_parser("evaluate-formats", help="Audit fixed benchmark labels under any, offline and online filters")
     inspect = commands.add_parser("inspect", help="Describe the fitted catalog or validate a saved artifact without queries")
     inspect.add_argument("--model", help="Validate this artifact by exact deterministic refit")
@@ -43,7 +46,8 @@ def main():
             model.save(args.output)
             print(json.dumps({"output": args.output, "documents": len(catalog), "vocabulary": len(model.idf)}, indent=2))
         elif args.command == "evaluate":
-            print(json.dumps(evaluate(model), indent=2))
+            report = save_evaluation(model, args.output) if args.output else evaluate(model)
+            print(json.dumps(report, indent=2))
         elif args.command == "evaluate-formats":
             print(json.dumps(evaluate_formats(model), indent=2))
         elif args.command == "inspect":

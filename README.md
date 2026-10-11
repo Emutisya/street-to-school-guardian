@@ -143,6 +143,11 @@ format modes. Labels outside a format are explicitly excluded from its recall
 denominator, not scored as failures or treated as family eligibility. Each mode
 reports evaluated/excluded query counts, admitted labels and candidate counts.
 A format with no admitted labels reports `null` accuracy.
+`python -m guardian evaluate --output models\benchmark.json` atomically saves a
+reproducible synthetic benchmark snapshot and prints the same report. Only
+repository-local paths are accepted, failed replacement preserves the last good
+report, and live request text is never a report input. `--model models\tfidf.json`
+evaluates an exact-validated artifact rather than the default in-memory refit.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
