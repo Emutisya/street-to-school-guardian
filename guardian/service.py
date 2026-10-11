@@ -168,6 +168,8 @@ def match(model, payload):
         "results": ranked, "status": "matched" if ranked else "no_match",
         "diagnostics": model.diagnostics(text, mode),
         "provenance": retrieval_provenance(model),
+        "warning": "The word-based model does not understand negation or enforce requirements. A human must check whether each fictional description actually fits."
+        if re.search(r"\b(?:no|not|without|never)\b", text, re.IGNORECASE) else None,
         "message": "Fictional options for a human conversation; no referral has been sent."
         if ranked else "No close demo match. Try a specific general barrier, relax the format preference, or discuss options with a trusted human. This is not a denial of support.",
         "score_note": "TF-IDF cosine similarity, not a probability, need score or eligibility decision."

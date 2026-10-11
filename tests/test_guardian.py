@@ -484,6 +484,14 @@ class ConsentTests(unittest.TestCase):
         self.assertNotEqual(first["provenance"]["catalog_sha256"], changed["provenance"]["catalog_sha256"])
         self.assertNotIn("bus fares", json.dumps(first["provenance"]))
 
+    def test_negation_warning_does_not_pretend_word_matching_enforces_constraints(self):
+        plain = match(self.model, {"consent": True, "text": "internet"})
+        negative = match(self.model, {"consent": True, "text": "without internet"})
+        self.assertEqual(plain["results"], negative["results"])
+        self.assertIsNone(plain["warning"])
+        self.assertIn("does not understand negation", negative["warning"])
+        self.assertNotIn("without internet", negative["warning"])
+
     def test_handoff_simulation_does_not_echo_barriers(self):
         result = handoff(self.model, {"consent": True, "resource_id": "transport"})
         self.assertEqual(result["status"], "simulation_only")

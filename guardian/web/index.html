@@ -601,7 +601,7 @@
           $("result-count").textContent = `${data.results.length} demo ideas`;
           if (data.results.length) render(data.results);
           else noMatch(data);
-          message(data.message);
+          message(data.message + (data.warning ? " " + data.warning : ""));
         } catch (error) {
           if (generation === epoch && error.name !== "AbortError") {
             const text = error.name === "TimeoutError" ? "The local matching request timed out. Check the Python server and try again."

@@ -20,6 +20,10 @@ Match/explanation responses carry catalog fingerprint, algorithm, artifact versi
 fixed threshold and tokenizer provenance. Identical catalog runs share provenance
 across different anonymous descriptions. No query fingerprint, request identifier
 or personal/session tracking is introduced.
+Descriptions containing common negation words trigger an explicit limitation
+warning: this bag-of-words retriever does not understand negation or enforce
+requirements. Ranking is unchanged; humans must check actual fit. The warning
+does not interpret family circumstances or claim semantic understanding.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It
