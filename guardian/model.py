@@ -12,6 +12,7 @@ import tempfile
 import unicodedata
 
 from .service import validate
+from .artifacts import read_artifact
 
 DATA_DIR = Path(__file__).parent / "data"
 MIN_SCORE = 0.12
@@ -217,7 +218,7 @@ class Retriever:
 
     @classmethod
     def load(cls, path, catalog):
-        saved = json.loads(Path(path).read_text(encoding="utf-8"))
+        saved = read_artifact(path)
         # This small catalog makes exact re-fit validation inexpensive and detects
         # stale, corrupt or tampered artifacts without trusting persisted weights.
         expected = cls(catalog).fit()

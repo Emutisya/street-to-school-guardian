@@ -1,4 +1,7 @@
 # Street to School Guardian
+Saved model parsing is bounded to one MiB and requires strict UTF-8 JSON with
+unique fields and finite numbers. Excessive nesting fails without a traceback;
+exact catalog/refit validation still applies after framing checks.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

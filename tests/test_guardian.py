@@ -173,6 +173,19 @@ class ModelTests(unittest.TestCase):
         finally:
             path.unlink(missing_ok=True)
 
+    def test_artifact_framing_rejects_duplicate_nonfinite_deep_and_oversized_json(self):
+        path = ROOT / "models" / "framing-test.json"
+        try:
+            for raw in (b'{"version":1,"version":1}', b'{"idf":{"bus":NaN}}',
+                        b"[" * 2000 + b"]" * 2000, "{}".encode("utf-16"), b"x" * 1048577):
+                path.write_bytes(raw)
+                with self.assertRaises(ValueError):
+                    Retriever.load(path, self.catalog)
+            self.model.save(path)
+            self.assertEqual(Retriever.load(path, self.catalog).rank("bus"), self.model.rank("bus"))
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_held_out_evaluation_and_duplicate_leakage_guard(self):
         scores = evaluate(self.model)
         self.assertGreaterEqual(scores["mean_recall_at_3"], .8)
