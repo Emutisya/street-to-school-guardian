@@ -232,6 +232,7 @@
         $("find").disabled = !consent.checked || busy;
         $("find").textContent = busy ? "Finding ideas…" : "Explore support ideas";
         $("result-region").setAttribute("aria-busy", String(busy));
+        results.querySelectorAll("button").forEach(button => button.disabled = busy || !consent.checked);
       }
       function empty(title, text) {
         const box = node("div", undefined, "empty");
@@ -253,7 +254,7 @@
         pending = new AbortController();
         const response = await fetch(route, {
           method: "POST", headers: {"Content-Type": "application/json"},
-          body: JSON.stringify(payload), signal: pending.signal,
+          body: JSON.stringify(payload), signal: AbortSignal.any([pending.signal, AbortSignal.timeout(10000)]),
           cache: "no-store", credentials: "omit"
         });
         const data = await response.json();
@@ -271,7 +272,7 @@
           $("checklist").replaceChildren(...data.checklist.map(text => node("li", text)));
           $("handoff").showModal();
         } catch (error) {
-          if (generation === epoch && error.name !== "AbortError") message(error.message || "Local server unavailable.", true);
+          if (generation === epoch && error.name !== "AbortError") message(error.name === "TimeoutError" ? "The local handoff preview timed out. Check the Python server and try again." : error.message || "Local server unavailable.", true);
         } finally {
           if (generation === epoch) { busy = false; pending = null; sync(); }
         }
@@ -292,6 +293,7 @@
           scoreBar.append(fill);
           explanation.append(node("div", `Cosine similarity ${item.score.toFixed(3)} · not a probability`, "score"), scoreBar);
           const button = node("button", "Preview human handoff");
+          button.setAttribute("aria-label", `Preview human handoff for ${item.title}`);
           button.type = "button"; button.addEventListener("click", () => handoff(item.id));
           card.append(head, node("h3", item.title), node("p", item.description, "description"), metadata, explanation, node("p", item.availability, "availability"), button);
           results.append(card);
@@ -310,7 +312,7 @@
           else empty("No close match is not a denial.", data.message);
           message(data.message);
         } catch (error) {
-          if (generation === epoch && error.name !== "AbortError") message(error.message || "Local server unavailable. Start python -m guardian serve.", true);
+          if (generation === epoch && error.name !== "AbortError") message(error.name === "TimeoutError" ? "The local matching request timed out. Check the Python server and try again." : error.message || "Local server unavailable. Start python -m guardian serve.", true);
         } finally {
           if (generation === epoch) { busy = false; pending = null; sync(); }
         }

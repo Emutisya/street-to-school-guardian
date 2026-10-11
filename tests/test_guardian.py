@@ -245,6 +245,19 @@ class HTTPTests(unittest.TestCase):
             "Content-Type": "application/json", "Origin": f"http://127.0.0.1:{self.port}"
         })[0], 200)
 
+    def test_stalled_request_returns_timeout_without_breaking_server(self):
+        connection = HTTPConnection("127.0.0.1", self.port, timeout=8)
+        try:
+            connection.request("POST", "/api/match", "{}", {
+                "Content-Type": "application/json", "Content-Length": "100",
+            })
+            response = connection.getresponse()
+            self.assertEqual(response.status, 408)
+            self.assertIn("timed out", json.loads(response.read())["error"])
+        finally:
+            connection.close()
+        self.assertEqual(self.request("/health")[0], 200)
+
     def test_client_disconnect_is_quiet_and_server_remains_healthy(self):
         logs = io.StringIO()
         with redirect_stderr(logs):
