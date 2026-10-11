@@ -94,6 +94,11 @@ filters still apply, and “Next catalog page” advances a bounded page. Browse
 cards deliberately show no similarity score or rank. Withdrawal clears them.
 Browser smoke runs use unique run/profile folders so concurrent runs cannot
 delete each other's browser profiles.
+Choose up to three supports from ranked or browsed cards for a side-by-side
+dashboard comparison. The transient shortlist stores catalog IDs/titles only in
+page memory, never barrier text, notes or browser storage. Remove buttons have
+resource-specific labels. Comparison requires at least two choices and explicit
+consent; reset and withdrawal clear both choices and dialog contents.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

@@ -108,12 +108,18 @@ try {
   await until(() => run("document.querySelectorAll('.resource').length === 6"), "catalog browse without input");
   assert.equal(await run("document.getElementById('barrier').value"), "");
   assert.equal(await run("!!document.querySelector('.score')"), false, "Catalog is not ranked");
+  await run("document.querySelectorAll('[data-choice]')[0].click(); document.querySelectorAll('[data-choice]')[1].click(); document.getElementById('compare').click()");
+  await until(() => run("document.getElementById('comparison').open"), "comparison dialog");
+  assert.equal(await run("document.getElementById('comparison-cards').children.length"), 2);
+  assert.ok((await run("document.getElementById('comparison-message').textContent")).includes("No option is preferred"));
+  await run("document.getElementById('close-comparison').click()");
   await run("document.getElementById('next-page').click()");
   await until(() => run("document.getElementById('result-count').textContent === '7–12 of 12 catalog ideas'"), "catalog pagination");
   await run("document.getElementById('category').value = 'Food'; document.getElementById('category').dispatchEvent(new Event('change')); document.getElementById('browse').click()");
   await until(() => run("document.querySelectorAll('.resource').length === 1"), "catalog category filter");
   assert.ok((await run("document.getElementById('results').textContent")).includes("Food and learning"));
   await run("document.getElementById('clear').click()");
+  assert.equal(await run("document.getElementById('choice-list').children.length"), 0, "Reset clears temporary choices");
 
   // Artificially delay the response to ensure revocation cannot render late results.
   await run(`window.originalFetch = window.fetch; window.fetch = async (...args) => {

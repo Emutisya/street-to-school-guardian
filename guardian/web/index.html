@@ -139,6 +139,14 @@
     dialog::backdrop { background: var(--cp-overlay); }
     dialog li { margin-bottom: 12px; }
     dialog ol { padding-left: 24px; }
+    .choices { margin-top: 24px; }
+    #choice-list { padding-left: 20px; }
+    #choice-list li { margin: 8px 0; }
+    #choice-list button { margin-left: 8px; padding: 4px 8px; }
+    .comparison-grid { display: grid; gap: 16px; }
+    .comparison-grid dl { margin: 0; }
+    .comparison-grid dt { font-weight: 600; }
+    .comparison-grid dd { margin: 0 0 8px; }
     .code { font-family: Consolas, "Courier New", Courier, monospace; }
     @media (max-width: 950px) { .workspace { grid-template-columns: 320px minmax(0, 1fr); } .hero { gap: 24px; } .panel { padding: 20px; } }
     @media (max-width: 760px) { .workspace, .hero, .principles { grid-template-columns: 1fr; } .hero { padding-top: 28px; } .path { display: none; } .wrap { width: calc(100% - 32px); } .nav-right .pill { display: none; } .brand { font-size: 14px; } .resource-head { align-items: flex-start; } }
@@ -206,6 +214,12 @@
         </div>
       </section>
     </section>
+    <section class="panel choices" aria-labelledby="choices-title">
+      <h2 id="choices-title">Your temporary demo choices</h2>
+      <p class="subtle">Choose up to three fictional supports. These catalog IDs stay only in this page's memory, contain no barrier text and are cleared on reset or withdrawal. Selection is not an application.</p>
+      <ul id="choice-list"></ul>
+      <button id="compare" type="button" disabled>Compare chosen supports</button>
+    </section>
     <section class="principles" aria-label="Safeguarding principles">
       <div><h3>Match needs, never monitor children</h3><p>No attendance feeds, individual profiles, surveillance, GPS, dropout labels, eligibility predictions or punitive actions.</p></div>
       <div><h3>Explain the match</h3><p>The local model learns a vocabulary and weights from synthetic support descriptions. Shared terms explain its suggestions. Similarity scores are not probabilities.</p></div>
@@ -214,6 +228,7 @@
   </main>
   <footer><div class="wrap">Street to School Guardian · Synthetic data only · No external APIs, analytics, keys or downloaded models · If facing immediate danger, seek appropriate trusted local help outside this demo.</div></footer>
   <dialog id="handoff" aria-labelledby="handoff-title"><div class="step">03 / HUMAN HANDOFF SIMULATION</div><h2 id="handoff-title">A conversation, not a referral</h2><p id="handoff-resource" class="terms"></p><p id="handoff-message" class="subtle"></p><ol id="checklist"></ol><button id="close-dialog" type="button">Return to ideas</button></dialog>
+  <dialog id="comparison" aria-labelledby="comparison-title"><h2 id="comparison-title">Fictional support comparison</h2><p id="comparison-message" class="subtle"></p><p id="shared-modes"></p><div id="comparison-cards" class="comparison-grid"></div><button id="close-comparison" type="button">Return to choices</button></dialog>
   <script>
     (() => {
       // Preserve the mandated initial script while correctly supporting explicit light.
@@ -223,6 +238,7 @@
       const consent = $("consent"), barrier = $("barrier"), mode = $("mode");
       const results = $("results"), status = $("status");
       let epoch = 0, pending = null, busy = false, nextOffset = null;
+      const choices = new Map();
       function node(tag, text, className) {
         const item = document.createElement(tag);
         if (text !== undefined) item.textContent = text;
@@ -237,6 +253,8 @@
         $("category").disabled = !consent.checked || busy;
         $("browse").disabled = !consent.checked || busy;
         $("next-page").disabled = !consent.checked || busy || nextOffset === null;
+        $("compare").disabled = !consent.checked || busy || choices.size < 2;
+        $("choice-list").querySelectorAll("button").forEach(button => button.disabled = busy || !consent.checked);
         $("find").disabled = !consent.checked || busy;
         $("find").textContent = busy ? "Finding ideas…" : "Explore support ideas";
         $("result-region").setAttribute("aria-busy", String(busy));
@@ -250,7 +268,9 @@
       function invalidate(clearInput = false) {
         epoch++; if (pending) pending.abort(); pending = null; busy = false;
         nextOffset = null;
-        if (clearInput) { barrier.value = ""; mode.value = "any"; $("category").value = ""; }
+        if (clearInput) { barrier.value = ""; mode.value = "any"; $("category").value = ""; choices.clear(); showChoices(); }
+        $("comparison").close(); $("comparison-cards").replaceChildren();
+        $("comparison-message").textContent = ""; $("shared-modes").textContent = "";
         $("handoff").close(); $("checklist").replaceChildren();
         $("handoff-resource").textContent = ""; $("handoff-message").textContent = "";
         $("result-count").textContent = consent.checked ? "Ready when you are" : "Awaiting consent";
@@ -307,9 +327,64 @@
           button.setAttribute("aria-label", `Preview human handoff for ${item.title}`);
           button.type = "button"; button.addEventListener("click", () => handoff(item.id));
           card.append(head, node("h3", item.title), node("p", item.description, "description"), metadata, explanation, node("p", item.availability, "availability"), button);
+          const select = node("button", choices.has(item.id) ? "Remove choice" : "Choose for comparison");
+          select.type = "button"; select.dataset.choice = item.id;
+          select.setAttribute("aria-label", `${choices.has(item.id) ? "Remove choice" : "Choose for comparison"}: ${item.title}`);
+          select.setAttribute("aria-pressed", String(choices.has(item.id)));
+          select.addEventListener("click", () => toggleChoice(item));
+          card.append(select);
           results.append(card);
         });
       }
+      function showChoices() {
+        $("choice-list").replaceChildren();
+        choices.forEach(item => {
+          const li = node("li", item.title), remove = node("button", "Remove");
+          remove.type = "button"; remove.setAttribute("aria-label", `Remove chosen support: ${item.title}`);
+          remove.addEventListener("click", () => toggleChoice(item));
+          li.append(remove); $("choice-list").append(li);
+        });
+        results.querySelectorAll("[data-choice]").forEach(button => {
+          const selected = choices.has(button.dataset.choice);
+          button.textContent = selected ? "Remove choice" : "Choose for comparison";
+          button.setAttribute("aria-pressed", String(selected));
+          const title = button.closest("article").querySelector("h3").textContent;
+          button.setAttribute("aria-label", `${button.textContent}: ${title}`);
+        });
+        sync();
+      }
+      function toggleChoice(item) {
+        if (!consent.checked || busy) return;
+        if (choices.has(item.id)) choices.delete(item.id);
+        else if (choices.size < 3) choices.set(item.id, {id: item.id, title: item.title});
+        else { message("Only three fictional choices can be compared. Remove a choice first.", true); return; }
+        message(`${choices.size} temporary demo choices. No description or notes are saved.`);
+        showChoices();
+      }
+      $("compare").addEventListener("click", async () => {
+        if (!consent.checked || busy || choices.size < 2) return;
+        const generation = epoch; busy = true; sync();
+        try {
+          const data = await request("/api/compare", {consent: true, resource_ids: [...choices.keys()]});
+          if (generation !== epoch || !consent.checked) return;
+          $("comparison-message").textContent = data.message;
+          $("shared-modes").textContent = `Shared fictional formats: ${data.shared_modes.join(", ") || "none"}. Differing fields: ${data.differing_fields.join(", ") || "none"}.`;
+          $("comparison-cards").replaceChildren(...data.resources.map(item => {
+            const card = node("section"), detail = node("dl");
+            ["category", "modes", "language", "cost", "availability"].forEach(field => {
+              detail.append(node("dt", field), node("dd", Array.isArray(item[field]) ? item[field].join(" + ") : item[field]));
+            });
+            card.append(node("h3", item.title), node("p", item.description), detail);
+            return card;
+          }));
+          $("comparison").showModal();
+        } catch (error) {
+          if (generation === epoch && error.name !== "AbortError") message("Comparison could not load. Check the local server and try again.", true);
+        } finally {
+          if (generation === epoch) { busy = false; pending = null; sync(); }
+        }
+      });
+      $("close-comparison").addEventListener("click", () => $("comparison").close());
       async function browseCatalog(offset = 0) {
         if (!consent.checked || busy) return;
         invalidate(); const generation = epoch; busy = true; sync();
