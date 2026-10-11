@@ -131,6 +131,24 @@ class ModelTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             evaluate(Retriever(leaked).fit())
 
+    def test_artifact_boolean_weights_cannot_impersonate_unit_weights(self):
+        catalog = copy.deepcopy(self.catalog[:1])
+        catalog[0]["description"] = "bus"
+        model = Retriever(catalog).fit()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "model.json"
+            model.save(path)
+            original = json.loads(path.read_text(encoding="utf-8"))
+            for field in ("idf", "vectors"):
+                saved = copy.deepcopy(original)
+                if field == "idf":
+                    saved["idf"]["bus"] = True
+                else:
+                    saved["vectors"][catalog[0]["id"]]["bus"] = True
+                path.write_text(json.dumps(saved), encoding="utf-8")
+                with self.assertRaisesRegex(ValueError, "does not match"):
+                    Retriever.load(path, catalog)
+
     def test_evaluation_rejects_empty_groups_and_invalid_resource_labels(self):
         original = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
         for mutate in (

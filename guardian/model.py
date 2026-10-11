@@ -120,10 +120,17 @@ class Retriever:
         # This small catalog makes exact re-fit validation inexpensive and detects
         # stale, corrupt or tampered artifacts without trusting persisted weights.
         expected = cls(catalog).fit()
-        if not isinstance(saved, dict) or type(saved.get("version")) is not int or saved != {
+        if (not isinstance(saved, dict) or type(saved.get("version")) is not int
+                or not isinstance(saved.get("idf"), dict)
+                or any(type(weight) not in (int, float) for weight in saved["idf"].values())
+                or not isinstance(saved.get("vectors"), dict)
+                or any(not isinstance(vector, dict)
+                       or any(type(weight) not in (int, float) for weight in vector.values())
+                       for vector in saved["vectors"].values())
+                or saved != {
             "version": 1, "catalog_sha256": fingerprint(catalog),
             "idf": expected.idf, "vectors": expected.vectors
-        }:
+        }):
             raise ValueError("Model artifact does not match this catalog and implementation. Retrain.")
         expected.idf = saved["idf"]
         expected.vectors = saved["vectors"]
