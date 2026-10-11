@@ -219,6 +219,17 @@ def evaluate(model):
     positive = [row for row in cases if row["group"] == "queries"]
     negatives = [row for row in cases if row["group"] == "unmatched_queries"]
     challenges = [row for row in cases if row["group"] == "challenge_queries"]
+    coverage = []
+    for resource in sorted(model.catalog, key=lambda row: row["id"]):
+        labeled = [row for row in positive + challenges if resource["id"] in row["relevant"]]
+        hits = sum(resource["id"] in row["ranked"] for row in labeled)
+        coverage.append({
+            "resource_id": resource["id"], "category": resource["category"],
+            "standard_labels": sum(row["group"] == "queries" for row in labeled),
+            "challenge_labels": sum(row["group"] == "challenge_queries" for row in labeled),
+            "retrieved_at_3": hits, "labeled_queries": len(labeled),
+            "retrieval_rate": round(hits / len(labeled), 6) if labeled else None
+        })
     return {
         "positive_queries": len(positive), "unmatched_queries": len(negatives),
         "top1_hit_rate": round(sum(row["top1_hit"] for row in positive) / len(positive), 6),
@@ -230,5 +241,7 @@ def evaluate(model):
         "challenge_abstention_rate": round(sum(row["abstained"] for row in challenges) / len(challenges), 6),
         "threshold": MIN_SCORE, "catalog_sha256": fingerprint(model.catalog),
         "benchmark_sha256": fingerprint(evaluation), "cases": cases,
+        "resource_coverage": coverage,
+        "unlabeled_resources": [row["resource_id"] for row in coverage if not row["labeled_queries"]],
         "note": "Small synthetic editorial benchmark, not field accuracy or impact."
     }

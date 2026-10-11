@@ -74,6 +74,10 @@ out-of-vocabulary descriptions, empty format catalogs, format-excluded matches
 and below-threshold similarity. Counts use unique usable English tokenizer terms;
 they are not language detection, a person's need score or a denial of support.
 No unmatched words or original descriptions are echoed in diagnostics.
+Evaluation reports include per-resource standard/challenge label counts and
+retrieval rates, plus an explicit list of unlabeled catalog resources. Unlabeled
+resources get `null`, not a perfect or zero accuracy value. Coverage measures
+editorial synthetic benchmark coverage, never actual service quality.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

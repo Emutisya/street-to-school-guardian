@@ -209,6 +209,21 @@ class ModelTests(unittest.TestCase):
         self.assertEqual(revised["cases"], report["cases"])
         self.assertNotEqual(revised["benchmark_sha256"], report["benchmark_sha256"])
 
+    def test_evaluation_resource_coverage_uses_labels_not_catalog_size(self):
+        report = evaluate(self.model)
+        for row in report["resource_coverage"]:
+            cases = [case for case in report["cases"] if row["resource_id"] in case["relevant"]]
+            self.assertEqual(row["labeled_queries"], len(cases))
+            self.assertEqual(row["retrieved_at_3"], sum(row["resource_id"] in case["ranked"] for case in cases))
+        data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
+        for query in data["queries"] + data["challenge_queries"]:
+            query["relevant"] = ["meal"]
+        with patch("guardian.model.json.loads", return_value=data):
+            sparse = evaluate(self.model)
+        self.assertEqual(len(sparse["unlabeled_resources"]), 11)
+        self.assertTrue(all(row["retrieval_rate"] is None for row in sparse["resource_coverage"]
+                            if row["resource_id"] != "meal"))
+
     def test_token_equivalent_queries_cannot_inflate_evaluation(self):
         data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
         duplicate = copy.deepcopy(data["queries"][0])
