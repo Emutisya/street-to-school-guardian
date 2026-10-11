@@ -3,7 +3,7 @@ import json
 from pathlib import Path
 import sys
 
-from .model import Retriever, evaluate, load_catalog
+from .model import Retriever, evaluate, evaluate_formats, load_catalog
 from .server import create_server
 from .service import RequestError, browse, compare, match, plan
 
@@ -14,6 +14,7 @@ def main():
     train = commands.add_parser("train", help="Fit catalog TF-IDF and save non-personal weights")
     train.add_argument("--output", default=str(Path("models") / "tfidf.json"))
     commands.add_parser("evaluate", help="Evaluate held-out synthetic queries, never used for fitting")
+    commands.add_parser("evaluate-formats", help="Audit fixed benchmark labels under any, offline and online filters")
     inspect = commands.add_parser("inspect", help="Describe the fitted catalog or validate a saved artifact without queries")
     inspect.add_argument("--model", help="Validate this artifact by exact deterministic refit")
     serve = commands.add_parser("serve", help="Serve the dashboard on loopback only")
@@ -43,6 +44,8 @@ def main():
             print(json.dumps({"output": args.output, "documents": len(catalog), "vocabulary": len(model.idf)}, indent=2))
         elif args.command == "evaluate":
             print(json.dumps(evaluate(model), indent=2))
+        elif args.command == "evaluate-formats":
+            print(json.dumps(evaluate_formats(model), indent=2))
         elif args.command == "inspect":
             print(json.dumps({**model.summary(), "source": "validated_artifact" if args.model else "in_memory_fit"}, indent=2))
         elif args.command == "browse":

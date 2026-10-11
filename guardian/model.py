@@ -289,3 +289,39 @@ def evaluate(model):
         "unexpected_match_cases": [row["case_id"] for row in negatives if not row["abstained"]],
         "note": "Small synthetic editorial benchmark, not field accuracy or impact."
     }
+
+
+def evaluate_formats(model):
+    benchmark = evaluate(model)
+    profiles = {}
+    for mode in ("any", "offline", "online"):
+        allowed = {row["id"] for row in model.catalog if mode == "any" or mode in row["modes"]}
+        cases = []
+        for row in benchmark["cases"]:
+            relevant = set(row["relevant"]) & allowed
+            ranked = [item["id"] for item in model.rank(row["text"], mode)]
+            excluded = bool(row["relevant"] and not relevant)
+            cases.append({
+                "case_id": row["case_id"], "group": row["group"],
+                "format_relevant": sorted(relevant), "ranked": ranked,
+                "excluded_labels": sorted(set(row["relevant"]) - allowed),
+                "status": "labels_outside_format" if excluded else "evaluated",
+                "top1_hit": bool(ranked and ranked[0] in relevant) if relevant else None,
+                "recall_at_3": len(relevant & set(ranked)) / len(relevant) if relevant else None
+            })
+        metrics = {}
+        for group in ("queries", "challenge_queries"):
+            rows = [row for row in cases if row["group"] == group]
+            eligible = [row for row in rows if row["format_relevant"]]
+            metrics[group] = {
+                "queries": len(rows), "evaluated_queries": len(eligible),
+                "excluded_queries": len(rows) - len(eligible),
+                "top1_hit_rate": round(sum(row["top1_hit"] for row in eligible) / len(eligible), 6) if eligible else None,
+                "mean_recall_at_3": round(sum(row["recall_at_3"] for row in eligible) / len(eligible), 6) if eligible else None
+            }
+        negatives = [row for row in cases if row["group"] == "unmatched_queries"]
+        profiles[mode] = {"candidate_count": len(allowed), "metrics": metrics, "cases": cases,
+                          "unmatched_rejection_rate": round(sum(not row["ranked"] for row in negatives) / len(negatives), 6)}
+    return {"catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
+            "profiles": profiles,
+            "note": "Format diagnostics on fixed synthetic labels. Excluded labels are catalog constraints, never family eligibility."}

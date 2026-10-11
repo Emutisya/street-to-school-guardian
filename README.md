@@ -138,6 +138,11 @@ Per-group reason counts distinguish vocabulary abstentions from threshold or
 format limitations, while `unexpected_match_cases` identifies synthetic negative
 queries that received options. Position IDs are meaningful only with the reported
 benchmark hash; they are not identifiers for people.
+`python -m guardian evaluate-formats` audits the same fixed benchmark in all three
+format modes. Labels outside a format are explicitly excluded from its recall
+denominator, not scored as failures or treated as family eligibility. Each mode
+reports evaluated/excluded query counts, admitted labels and candidate counts.
+A format with no admitted labels reports `null` accuracy.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

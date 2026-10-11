@@ -12,7 +12,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from guardian.model import DATA_DIR, Retriever, evaluate, load_catalog, tokens
+from guardian.model import DATA_DIR, Retriever, evaluate, evaluate_formats, load_catalog, tokens
 from guardian.server import create_server
 from guardian.service import RequestError, browse, compare, handoff, match, plan
 
@@ -263,6 +263,25 @@ class ModelTests(unittest.TestCase):
         with patch.object(self.model, "rank", side_effect=contaminate):
             changed = evaluate(self.model)
         self.assertEqual(changed["unexpected_match_cases"], ["unmatched_queries:6"])
+
+    def test_format_evaluation_excludes_unavailable_labels_from_denominators(self):
+        report = evaluate_formats(self.model)
+        online = report["profiles"]["online"]
+        self.assertGreater(online["metrics"]["queries"]["excluded_queries"], 0)
+        for row in online["cases"]:
+            for rid in row["ranked"]:
+                self.assertIn("online", next(resource["modes"] for resource in self.catalog if resource["id"] == rid))
+            if row["status"] == "labels_outside_format":
+                self.assertIsNone(row["recall_at_3"])
+        ordinary = evaluate(self.model)
+        self.assertEqual(report["profiles"]["any"]["metrics"]["queries"]["mean_recall_at_3"],
+                         ordinary["mean_recall_at_3"])
+        offline_only = Retriever([row for row in self.catalog if "offline" in row["modes"]]).fit()
+        for row in offline_only.catalog:
+            row["modes"] = ["offline"]
+        empty = evaluate_formats(offline_only)["profiles"]["online"]["metrics"]["queries"]
+        self.assertEqual(empty["evaluated_queries"], 0)
+        self.assertIsNone(empty["top1_hit_rate"])
 
     def test_token_equivalent_queries_cannot_inflate_evaluation(self):
         data = json.loads((DATA_DIR / "evaluation.json").read_text(encoding="utf-8"))
@@ -565,6 +584,11 @@ class CLITests(unittest.TestCase):
         run = self.run_cli("evaluate")
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(json.loads(run.stdout), evaluate(Retriever(load_catalog()).fit()))
+
+    def test_cli_format_evaluation_is_reproducible(self):
+        run = self.run_cli("evaluate-formats")
+        self.assertEqual(run.returncode, 0, run.stderr)
+        self.assertEqual(json.loads(run.stdout), evaluate_formats(Retriever(load_catalog()).fit()))
 
     def test_cli_inspect_validates_artifacts_and_reports_catalog_geometry(self):
         fitted = self.run_cli("inspect")
