@@ -18,3 +18,24 @@ def explain_case(model, case_id, consent=False, mode="any", limit=3):
             "format_relevant": sorted(set(case["relevant"]) & allowed),
             "excluded_labels": sorted(set(case["relevant"]) - allowed), "retrieval": result,
             "note": "Replays a bundled synthetic case, never arbitrary text from command arguments."}
+
+
+def vocabulary_report(model):
+    benchmark = evaluate(model)
+    groups = {}
+    for name in ("queries", "challenge_queries", "unmatched_queries"):
+        cases = []
+        for row in benchmark["cases"]:
+            if row["group"] != name:
+                continue
+            diagnostic = row["diagnostics"]
+            usable, known = diagnostic["usable_term_count"], diagnostic["known_term_count"]
+            cases.append({"case_id": row["case_id"], "usable_terms": usable, "known_terms": known,
+                          "known_fraction": known / usable if usable else None})
+        usable_cases = [row for row in cases if row["known_fraction"] is not None]
+        groups[name] = {"cases": cases, "zero_usable_queries": len(cases) - len(usable_cases),
+                        "fully_unknown_queries": sum(row["known_terms"] == 0 for row in usable_cases),
+                        "mean_known_fraction": round(sum(row["known_fraction"] for row in usable_cases) / len(usable_cases), 6)
+                        if usable_cases else None}
+    return {"catalog_sha256": benchmark["catalog_sha256"], "benchmark_sha256": benchmark["benchmark_sha256"],
+            "groups": groups, "note": "Synthetic tokenizer coverage, not language identification, accuracy or personal-data coverage. Zero-usable cases are excluded from the fraction denominator."}

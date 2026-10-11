@@ -886,6 +886,18 @@ class CLITests(unittest.TestCase):
         self.assertEqual(bad.returncode, 2)
         self.assertNotIn("unapproved text", bad.stderr)
 
+    def test_vocabulary_audit_excludes_zero_usable_cases_from_fraction_denominator(self):
+        result = self.run_cli("evaluate-vocabulary")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        groups = json.loads(result.stdout)["groups"]
+        for group in groups.values():
+            usable = [row for row in group["cases"] if row["usable_terms"]]
+            self.assertAlmostEqual(group["mean_known_fraction"],
+                                   sum(row["known_terms"] / row["usable_terms"] for row in usable) / len(usable), places=6)
+        learning = next(row for row in groups["unmatched_queries"]["cases"] if row["case_id"] == "unmatched_queries:6")
+        self.assertIsNone(learning["known_fraction"])
+        self.assertGreater(groups["challenge_queries"]["fully_unknown_queries"], 0)
+
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))

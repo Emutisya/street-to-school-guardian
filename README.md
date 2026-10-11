@@ -27,6 +27,9 @@ does not interpret family circumstances or claim semantic understanding.
 `python -m guardian explain-case queries:5 --consent --mode online` replays a
 bundled synthetic case by report ID, exposing format-excluded labels and grounded
 retrieval explanations. Arbitrary command-line descriptions are not accepted.
+`evaluate-vocabulary` reports per-case and per-group unique tokenizer-term
+coverage. Generic cases with zero usable terms get `null` fractions and are
+explicitly excluded from the mean denominator; this is not language detection.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It
