@@ -258,6 +258,8 @@
     <h2 id="plan-title">Fictional conversation checklist</h2>
     <p id="plan-message" class="subtle"></p><ul id="plan-resources"></ul>
     <h3>Questions for human verification</h3><ul id="plan-verification"></ul>
+    <p id="review-progress" role="status" class="subtle"></p>
+    <button id="reset-review" type="button" disabled>Reset temporary prompt review marks</button>
     <p id="plan-privacy" class="subtle"></p>
     <div class="consent print-consent"><input id="print-consent" type="checkbox"><label for="print-consent">I choose to print this fictional checklist only. Printing may create a paper or file copy outside this page; no barrier description or private notes are included.</label></div>
     <button id="print-plan" type="button" disabled>Print fictional checklist only</button>
@@ -547,8 +549,10 @@
           $("plan-verification").replaceChildren(...data.verification.map((text, index) => {
             const li = node("li"), check = node("input"), label = node("label", ` ${text}`);
             check.type = "checkbox"; check.id = `verify-${index}`; label.htmlFor = check.id;
+            check.addEventListener("change", reviewProgress);
             li.append(check, label); return li;
           }));
+          reviewProgress();
           $("print-consent").checked = false;
           openDialog("planning", $("prepare-plan"));
         } catch (error) {
@@ -560,7 +564,19 @@
       $("close-plan").addEventListener("click", () => $("planning").close());
       $("print-consent").addEventListener("change", sync);
       $("planning").addEventListener("close", () => {
+        $("plan-verification").querySelectorAll("input").forEach(check => check.checked = false);
+        reviewProgress();
         $("print-consent").checked = false; delete document.body.dataset.printPlan; sync();
+      });
+      function reviewProgress() {
+        const checks = [...$("plan-verification").querySelectorAll("input")];
+        const marked = checks.filter(check => check.checked).length;
+        $("review-progress").textContent = `${marked} of ${checks.length} prompts marked as reviewed in this page. Marks do not verify services or record outcomes and disappear when this preview closes.`;
+        $("reset-review").disabled = !consent.checked || marked === 0;
+      }
+      $("reset-review").addEventListener("click", () => {
+        $("plan-verification").querySelectorAll("input").forEach(check => check.checked = false);
+        reviewProgress(); $("plan-verification").querySelector("input")?.focus();
       });
       $("print-plan").addEventListener("click", () => {
         if (!consent.checked || !$("print-consent").checked || !$("planning").open) return;

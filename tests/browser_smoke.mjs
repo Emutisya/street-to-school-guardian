@@ -177,6 +177,12 @@ try {
   await until(() => run("document.getElementById('planning').open"), "fictional planning checklist");
   assert.equal(await run("document.getElementById('print-plan').disabled"), true);
   assert.equal(await run("document.getElementById('plan-resources').children.length"), 2);
+  await run("document.querySelector('#plan-verification input').click()");
+  assert.ok((await run("document.getElementById('review-progress').textContent")).startsWith("1 of 4"));
+  await run("document.getElementById('reset-review').click()");
+  assert.equal(await run("document.querySelectorAll('#plan-verification input:checked').length"), 0);
+  assert.equal(await run("document.activeElement.id"), "verify-0");
+  await run("document.querySelector('#plan-verification input').click()");
   await run("window.printed = false; window.print = () => { window.printed = document.body.dataset.printPlan === 'true'; }; document.getElementById('print-consent').click(); document.getElementById('print-plan').click()");
   assert.equal(await run("window.printed && !document.body.dataset.printPlan"), true, "Print requires explicit transient authorization");
   await rpc("Emulation.setEmulatedMedia", {media: "print"});
@@ -186,6 +192,7 @@ try {
   await run("document.getElementById('close-plan').click()");
   await until(() => run("document.activeElement.id === 'prepare-plan'"), "plan focus restored");
   assert.equal(await run("document.getElementById('print-consent').checked"), false);
+  assert.equal(await run("document.querySelectorAll('#plan-verification input:checked').length"), 0, "Closing the preview discards review marks, not verified outcomes");
   await run("document.getElementById('clear-choices').click()");
   assert.equal(await run("document.getElementById('choice-list').children.length === 0 && document.getElementById('consent').checked && document.querySelectorAll('.resource').length === 6"), true, "Choice-only reset preserves consent and cards");
   assert.equal(await run("document.getElementById('plan-resources').children.length"), 0);

@@ -60,6 +60,10 @@ An explicit “Read current ideas or recovery guidance” action moves keyboard 
 to the result heading after a completed request. Requests do not steal input
 focus automatically; invalidation/withdrawal disables the action and scrolling
 does not animate.
+Planning prompts support a temporary reviewed-prompt count and a reset-marks
+action with keyboard focus recovery. Marks mean only that a prompt was reviewed,
+not that a service is verified or an outcome recorded. Closing the preview
+discards every mark; nothing is stored or sent.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It
