@@ -8,7 +8,7 @@ from .reporting import compare_evaluation, save_evaluation
 from .artifacts import check_artifact
 from .diagnostics import cardinality_report, cutoff_report, explain_case, pair_report, resource_balance_report, vocabulary_report
 from .server import create_server
-from .service import RequestError, browse, compare, explain, match, plan, related, resource_detail
+from .service import RequestError, browse, compare, explain, match, plan, plan_text, related, resource_detail
 
 
 def main():
@@ -56,6 +56,9 @@ def main():
         selected = commands.add_parser(name, help=f"Create a fictional {name} from catalog IDs only")
         selected.add_argument("--consent", action="store_true")
         selected.add_argument("resource_ids", nargs="+")
+        if name == "plan":
+            selected.add_argument("--format", choices=["json", "text"], default="json",
+                                  help="Readable synthetic checklist or default JSON; no file is written")
     neighbors = commands.add_parser("related", help="Explore bounded catalog-description similarities without a barrier")
     neighbors.add_argument("--consent", action="store_true")
     neighbors.add_argument("resource_id")
@@ -112,9 +115,11 @@ def main():
             }), indent=2))
         elif args.command in ("compare", "plan"):
             operation = compare if args.command == "compare" else plan
-            print(json.dumps(operation(model, {
-                "consent": args.consent, "resource_ids": args.resource_ids
-            }), indent=2))
+            payload = {"consent": args.consent, "resource_ids": args.resource_ids}
+            if args.command == "plan" and args.format == "text":
+                print(plan_text(model, payload), end="")
+            else:
+                print(json.dumps(operation(model, payload), indent=2))
         elif args.command == "related":
             print(json.dumps(related(model, {"consent": args.consent, "resource_id": args.resource_id,
                                             "mode": args.mode, "limit": args.limit}), indent=2))

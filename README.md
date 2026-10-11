@@ -64,6 +64,11 @@ Planning prompts support a temporary reviewed-prompt count and a reset-marks
 action with keyboard focus recovery. Marks mean only that a prompt was reviewed,
 not that a service is verified or an outcome recorded. Closing the preview
 discards every mark; nothing is stored or sent.
+`python -m guardian plan --consent --format text meal transport` prints a readable
+ASCII checklist in explicit selection order, with fictional/no-referral/privacy
+boundaries and human verification prompts. The CLI writes no file, reads no
+description, and keeps JSON as the default format. Consent and ID validation
+must succeed before any checklist output is produced.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

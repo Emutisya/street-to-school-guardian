@@ -855,6 +855,21 @@ class CLITests(unittest.TestCase):
             self.assertIn("resources", json.loads(allowed.stdout))
         self.assertEqual(self.run_cli("plan", "--consent", "missing").returncode, 2)
 
+    def test_cli_readable_plan_preserves_order_consent_and_no_referral_boundaries(self):
+        result = self.run_cli("plan", "--consent", "--format", "text", "meal", "transport", text="ignored stdin")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(result.stdout.startswith("FICTIONAL CONVERSATION PLAN\n"))
+        self.assertIn("Nothing was sent, saved, booked or referred", result.stdout)
+        self.assertLess(result.stdout.index("Food and learning"), result.stdout.index("School journey"))
+        self.assertIn("[ ]", result.stdout)
+        self.assertNotIn("ignored stdin", result.stdout)
+        denied = self.run_cli("plan", "--format", "text", "meal")
+        self.assertEqual(denied.returncode, 2)
+        self.assertEqual(denied.stdout, "")
+        invalid = self.run_cli("plan", "--consent", "--format", "text", "missing")
+        self.assertEqual(invalid.returncode, 2)
+        self.assertEqual(invalid.stdout, "")
+
     def test_cli_related_catalog_reads_no_barrier(self):
         run = self.run_cli("related", "--consent", "connectivity", "--limit", "2", text="ignored stdin")
         self.assertEqual(run.returncode, 0, run.stderr)

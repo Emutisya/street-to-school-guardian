@@ -105,6 +105,17 @@ def plan(model, payload):
     }
 
 
+def plan_text(model, payload):
+    report = plan(model, payload)
+    lines = ["FICTIONAL CONVERSATION PLAN", report["message"], "", "Selected fictional conversations:"]
+    for row in report["resources"]:
+        lines.extend([row["title"], "[ ] " + row["conversation"], ""])
+    lines.append("Prompts for human verification, not completed outcomes:")
+    lines.extend("[ ] " + prompt for prompt in report["verification"])
+    lines.extend(["", report["privacy"]])
+    return "\n".join(lines) + "\n"
+
+
 def related(model, payload):
     consent_fields(payload, {"resource_id", "mode", "limit"})
     rid = validate({"consent": True, "resource_id": payload.get("resource_id")}, "handoff")
