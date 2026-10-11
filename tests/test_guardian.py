@@ -370,6 +370,16 @@ class ConsentTests(unittest.TestCase):
             with self.assertRaises(RequestError):
                 browse(self.model, {"consent": True, **fields})
 
+    def test_catalog_facets_count_across_other_filter_not_current_page(self):
+        result = browse(self.model, {"consent": True, "mode": "online", "category": "Food", "limit": 1})
+        self.assertEqual(result["total"], 0)
+        self.assertEqual(result["category_counts"]["Food"], 0)
+        self.assertEqual(result["category_counts"]["Travel"], 1)
+        self.assertEqual(result["mode_counts"], {"any": 1, "offline": 1, "online": 0})
+        all_rows = browse(self.model, {"consent": True, "limit": 1})
+        self.assertEqual(sum(all_rows["category_counts"].values()), 12)
+        self.assertGreater(all_rows["mode_counts"]["offline"] + all_rows["mode_counts"]["online"], 12)
+
     def test_comparison_is_bounded_unranked_and_uses_only_metadata(self):
         result = compare(self.model, {"consent": True, "resource_ids": ["transport", "meal"]})
         self.assertEqual([r["id"] for r in result["resources"]], ["transport", "meal"])

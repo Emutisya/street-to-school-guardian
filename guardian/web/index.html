@@ -212,6 +212,7 @@
         <select id="category" disabled><option value="">All categories</option></select>
         <div class="actions"><button id="browse" type="button" disabled>Browse fictional catalog</button><button id="next-page" type="button" disabled>Next catalog page</button></div>
         <p class="field-help">Uses only category and format choices, never the description above. Catalog order is by ID, not suitability.</p>
+        <p class="field-help" id="catalog-coverage"></p>
         <p class="field-help">Reset or untick consent to clear this page and cancel pending requests. No browser storage or server payload logs are used.</p>
       </form>
       <section aria-labelledby="results-title" aria-busy="false" id="result-region">
@@ -338,6 +339,7 @@
       function invalidate(clearInput = false) {
         epoch++; if (pending) pending.abort(); pending = null; busy = false;
         nextOffset = null;
+        $("catalog-coverage").textContent = "";
         fieldError();
         if (clearInput) { barrier.value = ""; mode.value = "any"; $("category").value = ""; choices.clear(); showChoices(); }
         $("comparison").close(); $("comparison-cards").replaceChildren();
@@ -533,8 +535,9 @@
           if (generation !== epoch || !consent.checked) return;
           const selected = $("category").value;
           $("category").replaceChildren(new Option("All categories", ""),
-            ...data.categories.map(category => new Option(category, category)));
+            ...data.categories.map(category => new Option(`${category} (${data.category_counts[category]} in this format)`, category)));
           $("category").value = selected;
+          $("catalog-coverage").textContent = `Current category: ${data.mode_counts.any} fictional ideas in any format, ${data.mode_counts.offline} offline, ${data.mode_counts.online} online. Formats may overlap; counts are not actual service availability.`;
           nextOffset = data.next_offset;
           $("result-count").textContent = `${data.offset + (data.results.length ? 1 : 0)}–${data.offset + data.results.length} of ${data.total} catalog ideas`;
           if (data.results.length) render(data.results, false);

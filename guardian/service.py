@@ -43,6 +43,12 @@ def browse(model, payload):
         "total": len(rows), "offset": offset,
         "next_offset": end if end < len(rows) else None,
         "categories": categories,
+        "category_counts": {name: sum(row["category"] == name and
+                                     (mode == "any" or mode in row["modes"]) for row in model.catalog)
+                            for name in categories},
+        "mode_counts": {name: sum((category is None or row["category"] == category)
+                                 and (name == "any" or name in row["modes"]) for row in model.catalog)
+                        for name in ("any", "offline", "online")},
         "message": "Fictional catalog browsing, not recommendations or verified availability. No description is processed."
     }
 

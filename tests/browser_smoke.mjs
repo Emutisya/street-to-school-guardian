@@ -164,6 +164,8 @@ try {
   await run("document.getElementById('category').value = 'Food'; document.getElementById('category').dispatchEvent(new Event('change')); document.getElementById('browse').click()");
   await until(() => run("document.querySelectorAll('.resource').length === 1"), "catalog category filter");
   assert.ok((await run("document.getElementById('results').textContent")).includes("Food and learning"));
+  assert.ok((await run("document.getElementById('catalog-coverage').textContent")).includes("1 offline, 0 online"));
+  assert.ok((await run("document.querySelector('#category option[value=\"Food\"]').textContent")).includes("1 in this format"));
   await run("document.getElementById('clear').click()");
   assert.equal(await run("document.getElementById('choice-list').children.length"), 0, "Reset clears temporary choices");
   await run("document.getElementById('consent').click(); document.getElementById('browse').click()");

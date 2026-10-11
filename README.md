@@ -162,6 +162,11 @@ excluding itself. This uses the selected catalog description, not the barrier
 textarea, with the same fixed cosine threshold and format filter. It makes no
 suitability or availability claim. API: `POST /api/related`; CLI:
 `python -m guardian related --consent connectivity --mode offline --limit 2`.
+Browsing returns category counts under the current format and format counts under
+the current category, across the whole catalog rather than only the page.
+The dashboard labels those counts and keeps zero-count categories visible so
+filter limitations are understandable. Offline/online counts can overlap and
+must not be summed as distinct services; these are fictional catalog counts only.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.
