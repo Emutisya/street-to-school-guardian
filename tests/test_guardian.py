@@ -529,6 +529,26 @@ class CLITests(unittest.TestCase):
         self.assertEqual(run.returncode, 0, run.stderr)
         self.assertEqual(json.loads(run.stdout), evaluate(Retriever(load_catalog()).fit()))
 
+    def test_cli_inspect_validates_artifacts_and_reports_catalog_geometry(self):
+        fitted = self.run_cli("inspect")
+        self.assertEqual(fitted.returncode, 0, fitted.stderr)
+        report = json.loads(fitted.stdout)
+        self.assertEqual(report["vector_norm_range"], [1, 1])
+        self.assertEqual(report["documents"], 12)
+        self.assertEqual(report["source"], "in_memory_fit")
+        path = ROOT / "models" / "inspect-test.json"
+        try:
+            Retriever(load_catalog()).fit().save(path)
+            loaded = self.run_cli("inspect", "--model", str(path))
+            self.assertEqual(loaded.returncode, 0, loaded.stderr)
+            self.assertEqual(json.loads(loaded.stdout)["catalog_sha256"], report["catalog_sha256"])
+            path.write_text("{}", encoding="utf-8")
+            invalid = self.run_cli("inspect", "--model", str(path))
+            self.assertEqual(invalid.returncode, 2)
+            self.assertEqual(invalid.stdout, "")
+        finally:
+            path.unlink(missing_ok=True)
+
     def test_invalid_port_precedes_model_loading(self):
         for port in ("-1", "65536", "999999999999999999999"):
             with self.subTest(port=port):

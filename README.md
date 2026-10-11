@@ -83,6 +83,11 @@ for standard and challenge queries. Hit-at-three asks whether *any* label was
 retrieved; recall asks what fraction of labels was retrieved. Answered-only top-one
 accuracy is shown alongside coverage and is `null` when all queries abstain, so
 abstention cannot silently inflate an accuracy claim.
+`python -m guardian inspect` prints reproducible catalog geometry, format/category
+counts, tokenizer limitations and provenance without reading any description.
+`python -m guardian inspect --model models\tfidf.json` additionally validates a
+saved artifact against the deterministic refit. It exits nonzero for an invalid
+artifact and does not expose arbitrary artifact content or weights.
 
 - A polished, responsive light/dark dashboard with sample presets, anonymous barrier input, support-format preferences and a consent gate.
 - Actual Python inference behind a loopback HTTP server; the frontend does not simulate the model.

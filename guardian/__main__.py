@@ -14,6 +14,8 @@ def main():
     train = commands.add_parser("train", help="Fit catalog TF-IDF and save non-personal weights")
     train.add_argument("--output", default=str(Path("models") / "tfidf.json"))
     commands.add_parser("evaluate", help="Evaluate held-out synthetic queries, never used for fitting")
+    inspect = commands.add_parser("inspect", help="Describe the fitted catalog or validate a saved artifact without queries")
+    inspect.add_argument("--model", help="Validate this artifact by exact deterministic refit")
     serve = commands.add_parser("serve", help="Serve the dashboard on loopback only")
     serve.add_argument("--port", type=int, default=8765)
     serve.add_argument("--model", help="Validate a saved artifact; otherwise fit in memory")
@@ -41,6 +43,8 @@ def main():
             print(json.dumps({"output": args.output, "documents": len(catalog), "vocabulary": len(model.idf)}, indent=2))
         elif args.command == "evaluate":
             print(json.dumps(evaluate(model), indent=2))
+        elif args.command == "inspect":
+            print(json.dumps({**model.summary(), "source": "validated_artifact" if args.model else "in_memory_fit"}, indent=2))
         elif args.command == "browse":
             print(json.dumps(browse(model, {
                 "consent": args.consent, "mode": args.mode, "category": args.category,

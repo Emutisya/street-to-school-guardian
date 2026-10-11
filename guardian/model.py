@@ -149,6 +149,23 @@ class Retriever:
             "note": "Counts describe the synthetic catalog and tokenizer, never a person. No input terms are returned."
         }
 
+    def summary(self):
+        self.rank("")
+        return {
+            "algorithm": "catalog-only TF-IDF cosine", "artifact_version": 1,
+            "catalog_sha256": fingerprint(self.catalog), "documents": len(self.catalog),
+            "vocabulary_size": len(self.idf), "threshold": MIN_SCORE,
+            "tokenizer": "English ASCII words, lowercased; stopwords and single letters removed",
+            "format_counts": {mode: sum(mode in row["modes"] for row in self.catalog)
+                              for mode in ("offline", "online")},
+            "category_counts": dict(sorted(Counter(row["category"] for row in self.catalog).items())),
+            "vector_norm_range": [
+                round(min(math.sqrt(sum(v * v for v in vector.values())) for vector in self.vectors.values()), 12),
+                round(max(math.sqrt(sum(v * v for v in vector.values())) for vector in self.vectors.values()), 12)
+            ],
+            "note": "Synthetic resource weights only. No personal data, field accuracy or eligibility model."
+        }
+
     @classmethod
     def load(cls, path, catalog):
         saved = json.loads(Path(path).read_text(encoding="utf-8"))
