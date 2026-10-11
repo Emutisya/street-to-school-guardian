@@ -875,6 +875,17 @@ class CLITests(unittest.TestCase):
         self.assertEqual(len(json.loads(allowed.stdout)["candidates"]), 12)
         self.assertNotIn("Bus fares and buying notebooks", allowed.stdout)
 
+    def test_cli_bundled_case_replay_exposes_format_exclusions_and_rejects_arbitrary_cases(self):
+        self.assertEqual(self.run_cli("explain-case", "queries:5").returncode, 2)
+        result = self.run_cli("explain-case", "queries:5", "--consent", "--mode", "online")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads(result.stdout)
+        self.assertEqual(report["excluded_labels"], ["meal"])
+        self.assertEqual(report["format_relevant"], [])
+        bad = self.run_cli("explain-case", "unapproved text", "--consent")
+        self.assertEqual(bad.returncode, 2)
+        self.assertNotIn("unapproved text", bad.stderr)
+
     def test_occupied_dashboard_port_explains_recovery(self):
         with socket.socket() as listener:
             listener.bind(("127.0.0.1", 0))

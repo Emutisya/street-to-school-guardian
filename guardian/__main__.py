@@ -6,6 +6,7 @@ import sys
 from .model import Retriever, audit_catalog, evaluate, evaluate_baselines, evaluate_formats, load_catalog
 from .reporting import compare_evaluation, save_evaluation
 from .artifacts import check_artifact
+from .diagnostics import explain_case
 from .server import create_server
 from .service import RequestError, browse, compare, explain, match, plan, related, resource_detail
 
@@ -58,6 +59,11 @@ def main():
     detail = commands.add_parser("resource", help="Inspect one fictional catalog ID without processing a description")
     detail.add_argument("--consent", action="store_true")
     detail.add_argument("resource_id")
+    replay = commands.add_parser("explain-case", help="Replay one bundled synthetic benchmark ID")
+    replay.add_argument("case_id")
+    replay.add_argument("--consent", action="store_true")
+    replay.add_argument("--mode", choices=["any", "offline", "online"], default="any")
+    replay.add_argument("--limit", type=int, default=3)
     args = parser.parse_args()
     if args.command == "serve" and not 0 <= args.port <= 65535:
         parser.error("--port must be between 0 and 65535; use 0 to choose an available port.")
@@ -99,6 +105,8 @@ def main():
                                             "mode": args.mode, "limit": args.limit}), indent=2))
         elif args.command == "resource":
             print(json.dumps(resource_detail(model, {"consent": args.consent, "resource_id": args.resource_id}), indent=2))
+        elif args.command == "explain-case":
+            print(json.dumps(explain_case(model, args.case_id, args.consent, args.mode, args.limit), indent=2))
         elif args.command in ("recommend", "explain"):
             if not args.consent:
                 raise RequestError("Use --consent only after agreeing to process an anonymous description.", 403, "consent_required")
