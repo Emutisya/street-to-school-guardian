@@ -245,6 +245,14 @@ try {
   await run("document.getElementById('theme').click()");
   await rpc("Emulation.setEmulatedMedia", {features:[{name:"prefers-color-scheme",value:"light"}]});
   assert.equal(await run("document.documentElement.dataset.theme"), "dark", "Manual choice overrides system changes for this page");
+  const beforeNoScript = urls.filter(url => url.includes("/api/")).length;
+  await rpc("Emulation.setScriptExecutionDisabled", {value:true});
+  await rpc("Page.navigate", {url:base + "/?clawpilotTheme=light"});
+  await waitPage();
+  assert.ok((await run("document.getElementById('no-script').textContent")).includes("JavaScript is disabled"));
+  assert.equal(await run("getComputedStyle(document.getElementById('no-script')).display !== 'none' && document.getElementById('find').disabled && document.getElementById('barrier').disabled"), true, "No-script fallback is visible and consent controls stay inert");
+  assert.equal(urls.filter(url => url.includes("/api/")).length, beforeNoScript, "No inference with scripts disabled");
+  await rpc("Emulation.setScriptExecutionDisabled", {value:false});
   assert.ok(urls.every(url => url.startsWith(base)), `Page sends only loopback requests: ${JSON.stringify(urls.filter(url => !url.startsWith(base)).map(url => url.slice(0, 160)))}`);
   assert.deepEqual(errors, [], "No browser exceptions or server stderr");
   console.log("PASS: consent, real HTTP ranking, handoff, withdrawal, no-match, invalid input, reset, late-response gate, themes, mobile layout, no storage, no external requests.");
