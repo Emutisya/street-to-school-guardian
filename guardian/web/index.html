@@ -654,11 +654,17 @@
         invalidate(); barrier.value = button.dataset.preset; barrier.focus();
       }));
       $("clear").addEventListener("click", () => { consent.checked = false; invalidate(true); });
-      $("cancel-request").addEventListener("click", () => {
+      function cancelPending() {
         if (!busy) return;
         invalidate();
         message("Pending page request canceled; late responses will not appear. Consent and your current example remain. This cannot undo processing that already finished.");
         (consent.checked ? barrier : $("check-model")).focus();
+      }
+      $("cancel-request").addEventListener("click", cancelPending);
+      document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && busy && !document.querySelector("dialog[open]")) {
+          event.preventDefault(); cancelPending();
+        }
       });
       $("check-model").addEventListener("click", async () => {
         if (busy) return;

@@ -46,6 +46,10 @@ population representativeness or fairness.
 Snapshot comparison also reports standard/challenge deltas and recovered/regressed
 top-one case IDs separately, preventing offsetting group changes from disappearing
 inside an unchanged aggregate. All changes are recomputed from validated ranks.
+Escape cancels pending page work outside open dialogs, preserves the current
+anonymous example/consent, gates late output and restores input focus. Native
+dialog Escape dismissal remains unchanged; cancellation cannot undo completed
+server processing.
 ### AI for Education · Turn a barrier into a route forward.
 
 **Street to School Guardian is a consent-first support navigation engine.** It

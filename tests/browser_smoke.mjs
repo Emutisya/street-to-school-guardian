@@ -210,6 +210,15 @@ try {
   await run("document.getElementById('clear').click()");
 
   // Artificially delay the response to ensure revocation cannot render late results.
+  await run(`window.escapeFetch = window.fetch; window.fetch = async (...args) => {
+    const response = await window.escapeFetch(...args);
+    await new Promise(resolve => setTimeout(resolve, 350)); return response;
+  }; document.getElementById('consent').click(); document.querySelector('[data-preset]').click(); document.getElementById('find').click();`);
+  await rpc("Input.dispatchKeyEvent", {type:"keyDown",key:"Escape",code:"Escape",windowsVirtualKeyCode:27});
+  await rpc("Input.dispatchKeyEvent", {type:"keyUp",key:"Escape",code:"Escape",windowsVirtualKeyCode:27});
+  await delay(600);
+  assert.equal(await run("document.getElementById('consent').checked && !document.querySelector('.resource') && document.getElementById('barrier').value !== '' && document.activeElement.id === 'barrier'"), true, "Escape cancels pending work and gates late output");
+  await run("window.fetch = window.escapeFetch; document.getElementById('clear').click()");
   await run(`window.originalFetch = window.fetch; window.fetch = async (...args) => {
     const response = await window.originalFetch(...args);
     await new Promise(resolve => setTimeout(resolve, 350));
